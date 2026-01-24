@@ -1,51 +1,69 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Medical education notes from OnlineMedEd videos">
-  <title>OME Medicine Notes</title>
+  <meta name="description" content="Clinical Vault - Medical education notes and knowledge base">
+  <title>Clinical Vault</title>
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%237c3aed'/%3E%3Cstop offset='100%25' stop-color='%23a78bfa'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='20' fill='url(%23g)'/%3E%3Cpath d='M50 20 L50 50 M35 35 L65 35 M30 55 Q50 75 70 55' stroke='white' stroke-width='8' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="styles/main.css">
 </head>
+
 <body>
   <!-- Header -->
   <header class="header">
     <div class="header-left">
       <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 12h18M3 6h18M3 18h18"/>
+          <path d="M3 12h18M3 6h18M3 18h18" />
         </svg>
       </button>
-      <h1 class="site-title" id="siteTitle">OME Medicine Notes</h1>
+      <h1 class="site-title" id="siteTitle">Clinical Vault</h1>
     </div>
     <div class="header-center">
       <div class="search-container">
-        <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"/>
-          <path d="m21 21-4.35-4.35"/>
+        <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2">
+          <circle cx="11" cy="11" r="8" />
+          <path d="m21 21-4.35-4.35" />
         </svg>
-        <input type="text" class="search-input" id="searchInput" placeholder="Search notes..." autocomplete="off">
+        <input type="text" class="search-input" id="searchInput" placeholder="Search notes... (⌘K)" autocomplete="off">
         <div class="search-results" id="searchResults"></div>
       </div>
     </div>
     <div class="header-right">
+      <button class="icon-btn" id="settingsBtn" aria-label="Settings" title="Settings">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path
+            d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      </button>
       <button class="icon-btn" id="exportBtn" aria-label="Export" title="Export selected notes">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="7 10 12 15 17 10"/>
-          <line x1="12" y1="15" x2="12" y2="3"/>
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="7 10 12 15 17 10" />
+          <line x1="12" y1="15" x2="12" y2="3" />
         </svg>
       </button>
       <button class="icon-btn" id="themeToggle" aria-label="Toggle theme">
-        <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="5"/>
-          <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+        <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2">
+          <circle cx="12" cy="12" r="5" />
+          <path
+            d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
         </svg>
-        <svg class="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        <svg class="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
         </svg>
       </button>
     </div>
@@ -59,8 +77,8 @@
         <span class="sidebar-title">Files</span>
         <button class="select-mode-btn" id="selectModeBtn" title="Select notes for export">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="9 11 12 14 22 4"/>
-            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            <polyline points="9 11 12 14 22 4" />
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
           </svg>
         </button>
       </div>
@@ -73,17 +91,46 @@
     <main class="content" id="content">
       <div class="content-inner">
         <div class="welcome-screen" id="welcomeScreen">
-          <div class="welcome-icon">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14 2 14 8 20 8"/>
-              <line x1="16" y1="13" x2="8" y2="13"/>
-              <line x1="16" y1="17" x2="8" y2="17"/>
-              <polyline points="10 9 9 9 8 9"/>
+          <div class="welcome-logo">
+            <svg width="80" height="80" viewBox="0 0 100 100">
+              <defs>
+                <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#7c3aed" />
+                  <stop offset="100%" stop-color="#a78bfa" />
+                </linearGradient>
+              </defs>
+              <rect width="100" height="100" rx="20" fill="url(#logoGrad)" />
+              <path d="M50 20 L50 50 M35 35 L65 35 M30 55 Q50 75 70 55" stroke="white" stroke-width="8"
+                stroke-linecap="round" fill="none" />
             </svg>
           </div>
-          <h2>Welcome to your notes</h2>
-          <p>Select a note from the sidebar to start reading</p>
+          <h2>Welcome to Clinical Vault</h2>
+          <p class="welcome-subtitle">Your medical knowledge, beautifully organized</p>
+          <div class="welcome-features">
+            <div class="welcome-feature">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35" />
+              </svg>
+              <span>Search across all notes</span>
+            </div>
+            <div class="welcome-feature">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+              </svg>
+              <span>Wiki-style internal links</span>
+            </div>
+            <div class="welcome-feature">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              <span>Export as MD or PDF</span>
+            </div>
+          </div>
+          <p class="welcome-hint">Select a note from the sidebar to start reading</p>
         </div>
         <article class="note-content" id="noteContent" style="display: none;">
           <header class="note-header">
@@ -103,8 +150,8 @@
         <h3>Export Notes</h3>
         <button class="modal-close" id="closeModal">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="18" y1="6" x2="6" y2="18"/>
-            <line x1="6" y1="6" x2="18" y2="18"/>
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         </button>
       </div>
@@ -113,18 +160,18 @@
         <div class="export-options">
           <button class="export-option" id="exportMd">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14 2 14 8 20 8"/>
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
             </svg>
             <span>Download as Markdown</span>
             <small>.md files (original)</small>
           </button>
           <button class="export-option" id="exportPdf">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14 2 14 8 20 8"/>
-              <path d="M9 15h6"/>
-              <path d="M9 11h6"/>
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <path d="M9 15h6" />
+              <path d="M9 11h6" />
             </svg>
             <span>Download as PDF</span>
             <small>Formatted document</small>
@@ -140,8 +187,110 @@
     <p>Loading notes...</p>
   </div>
 
+  <!-- Settings Modal -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal settings-modal">
+      <div class="modal-header">
+        <h3>Settings</h3>
+        <button class="modal-close" id="closeSettingsModal">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body settings-body">
+        <div class="settings-group">
+          <label class="settings-label">Theme</label>
+          <div class="settings-options">
+            <button class="settings-option" data-theme="light">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="5" />
+                <path
+                  d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+              </svg>
+              Light
+            </button>
+            <button class="settings-option" data-theme="dark">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+              Dark
+            </button>
+          </div>
+        </div>
+        <div class="settings-group">
+          <label class="settings-label">Note Font Size</label>
+          <div class="settings-slider">
+            <input type="range" id="fontSizeSlider" min="14" max="22" value="16" step="1">
+            <span id="fontSizeValue">16px</span>
+          </div>
+        </div>
+        <div class="settings-group">
+          <label class="settings-label">Sidebar</label>
+          <div class="settings-toggle">
+            <label class="toggle-switch">
+              <input type="checkbox" id="sidebarCollapsedToggle">
+              <span class="toggle-slider"></span>
+            </label>
+            <span>Collapse sidebar by default</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Welcome Popup (First Visit) -->
+  <div class="modal-overlay welcome-popup-overlay" id="welcomePopup">
+    <div class="modal welcome-popup">
+      <div class="welcome-popup-header">
+        <div class="welcome-popup-logo">
+          <svg width="48" height="48" viewBox="0 0 100 100">
+            <defs>
+              <linearGradient id="popupGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#7c3aed" />
+                <stop offset="100%" stop-color="#a78bfa" />
+              </linearGradient>
+            </defs>
+            <rect width="100" height="100" rx="20" fill="url(#popupGrad)" />
+            <path d="M50 20 L50 50 M35 35 L65 35 M30 55 Q50 75 70 55" stroke="white" stroke-width="8"
+              stroke-linecap="round" fill="none" />
+          </svg>
+        </div>
+        <h2>Welcome to Clinical Vault</h2>
+        <p>Your medical knowledge, beautifully organized</p>
+      </div>
+      <div class="welcome-popup-features">
+        <div class="popup-feature">
+          <div class="popup-feature-icon">🔍</div>
+          <div class="popup-feature-text">
+            <strong>Full-text search</strong>
+            <span>Find anything across all your notes</span>
+          </div>
+        </div>
+        <div class="popup-feature">
+          <div class="popup-feature-icon">🔗</div>
+          <div class="popup-feature-text">
+            <strong>Wiki-style links</strong>
+            <span>Connected notes with [[wikilinks]]</span>
+          </div>
+        </div>
+        <div class="popup-feature">
+          <div class="popup-feature-icon">📥</div>
+          <div class="popup-feature-text">
+            <strong>Export options</strong>
+            <span>Download as Markdown or PDF</span>
+          </div>
+        </div>
+      </div>
+      <button class="welcome-popup-btn" id="dismissWelcome">Get Started</button>
+    </div>
+  </div>
+
   <script src="scripts/app.js"></script>
   <script src="scripts/search.js"></script>
   <script src="scripts/export.js"></script>
+  <script src="scripts/settings.js"></script>
 </body>
+
 </html>
