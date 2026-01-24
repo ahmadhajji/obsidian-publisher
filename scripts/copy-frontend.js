@@ -25,7 +25,7 @@ fs.copyFileSync(
 );
 
 // Copy JS files
-const jsFiles = ['app.js', 'search.js', 'export.js'];
+const jsFiles = ['app.js', 'search.js', 'export.js', 'settings.js'];
 for (const jsFile of jsFiles) {
     fs.copyFileSync(
         path.join(srcDir, 'scripts', jsFile),
