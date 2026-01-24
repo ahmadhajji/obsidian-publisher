@@ -74,14 +74,15 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
-// Start server
-app.listen(PORT, () => {
+// Start server - bind to 0.0.0.0 for cloud deployment
+const HOST = '0.0.0.0';
+app.listen(PORT, HOST, () => {
     console.log(`
 ╔════════════════════════════════════════════════════════╗
 ║                                                        ║
 ║   🚀 Obsidian Notes Publisher                          ║
 ║                                                        ║
-║   Server running at: http://localhost:${PORT}             ║
+║   Server running at: http://${HOST}:${PORT}             ║
 ║                                                        ║
 ║   Make sure to set these environment variables:        ║
 ║   - GOOGLE_CLIENT_ID                                   ║
