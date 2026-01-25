@@ -77,12 +77,6 @@ async function init() {
         // Render file tree
         renderFileTree();
 
-        // Set up event listeners
-        setupEventListeners();
-
-        // Initialize V2 components
-        initializeV2Components();
-
         // Handle initial URL route
         handleInitialRoute();
 
@@ -99,7 +93,12 @@ async function init() {
       </div>
     `;
     }
+
+    // Always initialize these regardless of API success
+    setupEventListeners();
+    initializeV2Components();
 }
+
 
 // Initialize V2 components
 function initializeV2Components() {
