@@ -1,5 +1,5 @@
 /**
- * Obsidian Publisher - Main Application
+ * Obsidian Publisher V2 - Main Application
  */
 
 // Global state
@@ -9,30 +9,53 @@ const state = {
     currentNote: null,
     selectMode: false,
     selectedNotes: new Set(),
-    theme: localStorage.getItem('theme') || 'dark'
+    theme: localStorage.getItem('theme') || 'dark',
+    user: null,
+    currentViewId: null // For analytics time tracking
 };
 
 // DOM Elements
 const elements = {
-    loadingOverlay: document.getElementById('loadingOverlay'),
-    siteTitle: document.getElementById('siteTitle'),
-    sidebar: document.getElementById('sidebar'),
-    sidebarToggle: document.getElementById('sidebarToggle'),
-    fileTree: document.getElementById('fileTree'),
-    welcomeScreen: document.getElementById('welcomeScreen'),
-    noteContent: document.getElementById('noteContent'),
-    noteTitle: document.getElementById('noteTitle'),
-    noteMeta: document.getElementById('noteMeta'),
-    noteBody: document.getElementById('noteBody'),
-    themeToggle: document.getElementById('themeToggle'),
-    selectModeBtn: document.getElementById('selectModeBtn'),
-    exportBtn: document.getElementById('exportBtn'),
-    exportModal: document.getElementById('exportModal'),
-    closeModal: document.getElementById('closeModal')
+    loadingOverlay: null,
+    siteTitle: null,
+    sidebar: null,
+    sidebarToggle: null,
+    fileTree: null,
+    welcomeScreen: null,
+    noteContent: null,
+    noteTitle: null,
+    noteMeta: null,
+    noteBody: null,
+    themeToggle: null,
+    selectModeBtn: null,
+    exportBtn: null,
+    exportModal: null,
+    closeModal: null
 };
 
 // Initialize app
 async function init() {
+    // Cache DOM elements
+    Object.keys(elements).forEach(key => {
+        elements[key] = document.getElementById(key) || document.getElementById(key.replace(/([A-Z])/g, m => m.toLowerCase()));
+    });
+
+    elements.loadingOverlay = document.getElementById('loadingOverlay');
+    elements.siteTitle = document.getElementById('siteTitle');
+    elements.sidebar = document.getElementById('sidebar');
+    elements.sidebarToggle = document.getElementById('sidebarToggle');
+    elements.fileTree = document.getElementById('fileTree');
+    elements.welcomeScreen = document.getElementById('welcomeScreen');
+    elements.noteContent = document.getElementById('noteContent');
+    elements.noteTitle = document.getElementById('noteTitle');
+    elements.noteMeta = document.getElementById('noteMeta');
+    elements.noteBody = document.getElementById('noteBody');
+    elements.themeToggle = document.getElementById('themeToggle');
+    elements.selectModeBtn = document.getElementById('selectModeBtn');
+    elements.exportBtn = document.getElementById('exportBtn');
+    elements.exportModal = document.getElementById('exportModal');
+    elements.closeModal = document.getElementById('closeModal');
+
     try {
         // Apply saved theme
         document.documentElement.dataset.theme = state.theme;
@@ -57,14 +80,11 @@ async function init() {
         // Set up event listeners
         setupEventListeners();
 
-        // Check for note in URL hash
-        if (window.location.hash) {
-            const noteId = window.location.hash.slice(1);
-            const note = state.notes.find(n => n.id === noteId);
-            if (note) {
-                navigateToNote(note);
-            }
-        }
+        // Initialize V2 components
+        initializeV2Components();
+
+        // Handle initial URL route
+        handleInitialRoute();
 
         // Hide loading overlay
         elements.loadingOverlay.classList.add('hidden');
@@ -79,6 +99,195 @@ async function init() {
       </div>
     `;
     }
+}
+
+// Initialize V2 components
+function initializeV2Components() {
+    // Initialize tabs manager
+    if (window.tabsManager) {
+        window.tabsManager.init();
+    }
+
+    // Initialize typography settings
+    if (window.typographySettings) {
+        window.typographySettings.init();
+    }
+
+    // Initialize auth UI
+    if (window.authUI) {
+        window.authUI.init();
+    }
+
+    // Initialize comments UI
+    if (window.commentsUI) {
+        window.commentsUI.init();
+    }
+
+    // Initialize analytics dashboard
+    if (window.analyticsDashboard) {
+        window.analyticsDashboard.init();
+    }
+
+    // Initialize history panel
+    if (window.historyPanel) {
+        window.historyPanel.init();
+    }
+
+    // Add share button to toolbar
+    addShareButton();
+
+    // Add navigation buttons
+    addNavigationButtons();
+
+    // Setup reading position tracking
+    setupReadingPositionTracking();
+}
+
+// Handle initial URL routing
+function handleInitialRoute() {
+    const path = window.location.pathname;
+
+    // Check for /notes/:noteId route
+    const noteMatch = path.match(/^\/notes\/(.+)$/);
+    if (noteMatch) {
+        const noteId = noteMatch[1];
+        const note = state.notes.find(n => n.id === noteId);
+        if (note) {
+            if (window.tabsManager) {
+                window.tabsManager.openTab(note);
+            } else {
+                displayNote(note);
+            }
+            return;
+        }
+    }
+
+    // Check for hash-based routing (legacy)
+    if (window.location.hash) {
+        const noteId = window.location.hash.slice(1);
+        const note = state.notes.find(n => n.id === noteId);
+        if (note) {
+            if (window.tabsManager) {
+                window.tabsManager.openTab(note);
+            } else {
+                displayNote(note);
+            }
+        }
+    }
+}
+
+// Add share button to toolbar
+function addShareButton() {
+    const toolbar = document.querySelector('.toolbar');
+    if (!toolbar) return;
+
+    const shareBtn = document.createElement('button');
+    shareBtn.id = 'shareBtn';
+    shareBtn.className = 'toolbar-btn';
+    shareBtn.title = 'Share Link';
+    shareBtn.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="18" cy="5" r="3"/>
+            <circle cx="6" cy="12" r="3"/>
+            <circle cx="18" cy="19" r="3"/>
+            <path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/>
+        </svg>
+    `;
+
+    shareBtn.addEventListener('click', copyShareLink);
+    toolbar.insertBefore(shareBtn, toolbar.querySelector('#themeToggle'));
+}
+
+// Add back/forward navigation buttons
+function addNavigationButtons() {
+    const header = document.querySelector('.note-header');
+    if (!header) return;
+
+    const navContainer = document.createElement('div');
+    navContainer.className = 'nav-buttons';
+    navContainer.innerHTML = `
+        <button id="navBackBtn" class="nav-btn" title="Go Back (Alt+←)" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+        </button>
+        <button id="navForwardBtn" class="nav-btn" title="Go Forward (Alt+→)" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+        </button>
+    `;
+
+    header.insertBefore(navContainer, header.firstChild);
+
+    document.getElementById('navBackBtn').addEventListener('click', () => {
+        window.tabsManager?.goBack();
+    });
+
+    document.getElementById('navForwardBtn').addEventListener('click', () => {
+        window.tabsManager?.goForward();
+    });
+}
+
+// Copy share link to clipboard
+async function copyShareLink() {
+    if (!state.currentNote) {
+        alert('No note selected');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/share/${state.currentNote.id}`);
+        const data = await response.json();
+
+        await navigator.clipboard.writeText(data.shareUrl);
+
+        // Show feedback
+        const shareBtn = document.getElementById('shareBtn');
+        shareBtn.classList.add('copied');
+        shareBtn.title = 'Copied!';
+
+        setTimeout(() => {
+            shareBtn.classList.remove('copied');
+            shareBtn.title = 'Share Link';
+        }, 2000);
+    } catch (error) {
+        console.error('Failed to copy link:', error);
+        // Fallback: copy current URL
+        await navigator.clipboard.writeText(window.location.href);
+    }
+}
+
+// Setup reading position tracking
+function setupReadingPositionTracking() {
+    let lastSaveTime = 0;
+    const saveInterval = 5000; // Save every 5 seconds
+
+    const contentArea = document.getElementById('contentArea');
+    if (!contentArea) return;
+
+    contentArea.addEventListener('scroll', () => {
+        if (!state.currentNote || !state.user) return;
+
+        const now = Date.now();
+        if (now - lastSaveTime < saveInterval) return;
+        lastSaveTime = now;
+
+        const scrollTop = contentArea.scrollTop;
+        const scrollHeight = contentArea.scrollHeight - contentArea.clientHeight;
+        const scrollPosition = scrollHeight > 0 ? scrollTop / scrollHeight : 0;
+
+        // Save position to server
+        fetch('/api/reading/position', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+                noteId: state.currentNote.id,
+                scrollPosition
+            })
+        }).catch(console.error);
+    });
 }
 
 // Render file tree
@@ -158,7 +367,25 @@ function createNoteElement(noteMeta) {
 
         const note = state.notes.find(n => n.id === noteMeta.id);
         if (note) {
-            navigateToNote(note);
+            // Check for middle-click or Cmd/Ctrl+click for new tab
+            if (e.button === 1 || e.metaKey || e.ctrlKey) {
+                window.tabsManager?.openTab(note, true);
+            } else if (window.tabsManager?.getActiveTab()) {
+                window.tabsManager.navigateInTab(note);
+            } else {
+                window.tabsManager?.openTab(note);
+            }
+        }
+    });
+
+    // Middle click handler
+    noteDiv.addEventListener('auxclick', (e) => {
+        if (e.button === 1) {
+            e.preventDefault();
+            const note = state.notes.find(n => n.id === noteMeta.id);
+            if (note) {
+                window.tabsManager?.openTab(note, true);
+            }
         }
     });
 
@@ -176,12 +403,9 @@ function createNoteElement(noteMeta) {
     return noteDiv;
 }
 
-// Navigate to note
-function navigateToNote(note) {
+// Display a note (called by tabs manager)
+function displayNote(note) {
     state.currentNote = note;
-
-    // Update URL
-    window.history.pushState(null, '', `#${note.id}`);
 
     // Update active state in file tree
     document.querySelectorAll('.tree-note').forEach(el => {
@@ -197,7 +421,10 @@ function navigateToNote(note) {
 
     // Update note display
     elements.noteTitle.textContent = note.title;
-    elements.noteMeta.textContent = note.path;
+
+    // Render breadcrumb
+    elements.noteMeta.innerHTML = renderBreadcrumb(note);
+
     elements.noteBody.innerHTML = note.html;
 
     // Handle internal links
@@ -207,7 +434,11 @@ function navigateToNote(note) {
             const targetId = link.dataset.note;
             const targetNote = state.notes.find(n => n.id === targetId);
             if (targetNote) {
-                navigateToNote(targetNote);
+                if (window.tabsManager?.getActiveTab()) {
+                    window.tabsManager.navigateInTab(targetNote);
+                } else {
+                    window.tabsManager?.openTab(targetNote);
+                }
             }
         });
     });
@@ -224,8 +455,13 @@ function navigateToNote(note) {
         }
     });
 
-    // Scroll to top
-    elements.noteContent.parentElement.scrollTop = 0;
+    // Load comments
+    if (window.commentsUI) {
+        window.commentsUI.loadComments(note.id);
+    }
+
+    // Record analytics view
+    recordNoteView(note.id);
 
     // Close sidebar on mobile
     if (window.innerWidth <= 768) {
@@ -233,32 +469,109 @@ function navigateToNote(note) {
     }
 }
 
+// Render breadcrumb navigation
+function renderBreadcrumb(note) {
+    const parts = note.path.split('/');
+    const breadcrumbs = [];
+
+    // Add home
+    breadcrumbs.push(`<a href="/" class="breadcrumb-item breadcrumb-home" title="Home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+    </a>`);
+
+    // Add folder path
+    let currentPath = '';
+    for (let i = 0; i < parts.length - 1; i++) {
+        currentPath += (i > 0 ? '/' : '') + parts[i];
+        breadcrumbs.push(`<span class="breadcrumb-separator">/</span>`);
+        breadcrumbs.push(`<span class="breadcrumb-item breadcrumb-folder">${escapeHtml(parts[i])}</span>`);
+    }
+
+    // Add current note
+    breadcrumbs.push(`<span class="breadcrumb-separator">/</span>`);
+    breadcrumbs.push(`<span class="breadcrumb-item breadcrumb-current">${escapeHtml(note.title)}</span>`);
+
+    return `<div class="breadcrumb">${breadcrumbs.join('')}</div>`;
+}
+
+// Record note view for analytics
+async function recordNoteView(noteId) {
+    try {
+        const response = await fetch(`/api/notes/${noteId}`, {
+            credentials: 'include'
+        });
+        const data = await response.json();
+        state.currentViewId = data.viewId;
+
+        // Start time tracking
+        startTimeTracking();
+    } catch (error) {
+        console.error('Failed to record view:', error);
+    }
+}
+
+// Track time spent on note
+let timeTrackingInterval = null;
+let timeSpent = 0;
+
+function startTimeTracking() {
+    stopTimeTracking();
+    timeSpent = 0;
+
+    timeTrackingInterval = setInterval(() => {
+        timeSpent += 5;
+
+        // Send update every 30 seconds
+        if (timeSpent % 30 === 0 && state.currentViewId) {
+            fetch('/api/analytics/time', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    viewId: state.currentViewId,
+                    seconds: timeSpent
+                })
+            }).catch(console.error);
+        }
+    }, 5000);
+}
+
+function stopTimeTracking() {
+    if (timeTrackingInterval) {
+        clearInterval(timeTrackingInterval);
+        timeTrackingInterval = null;
+    }
+}
+
 // Setup event listeners
 function setupEventListeners() {
     // Theme toggle
-    elements.themeToggle.addEventListener('click', () => {
+    elements.themeToggle?.addEventListener('click', () => {
         state.theme = state.theme === 'dark' ? 'light' : 'dark';
         document.documentElement.dataset.theme = state.theme;
         localStorage.setItem('theme', state.theme);
     });
 
     // Sidebar toggle (mobile)
-    elements.sidebarToggle.addEventListener('click', () => {
+    elements.sidebarToggle?.addEventListener('click', () => {
         elements.sidebar.classList.toggle('open');
     });
 
     // Close sidebar when clicking outside on mobile
     document.addEventListener('click', (e) => {
         if (window.innerWidth <= 768 &&
-            elements.sidebar.classList.contains('open') &&
-            !elements.sidebar.contains(e.target) &&
-            !elements.sidebarToggle.contains(e.target)) {
+            elements.sidebar?.classList.contains('open') &&
+            !elements.sidebar?.contains(e.target) &&
+            !elements.sidebarToggle?.contains(e.target)) {
             elements.sidebar.classList.remove('open');
         }
     });
 
     // Select mode toggle
-    elements.selectModeBtn.addEventListener('click', () => {
+    elements.selectModeBtn?.addEventListener('click', () => {
         state.selectMode = !state.selectMode;
         elements.selectModeBtn.classList.toggle('active', state.selectMode);
         elements.fileTree.classList.toggle('select-mode', state.selectMode);
@@ -275,7 +588,7 @@ function setupEventListeners() {
     });
 
     // Export button
-    elements.exportBtn.addEventListener('click', () => {
+    elements.exportBtn?.addEventListener('click', () => {
         if (state.selectedNotes.size > 0) {
             showExportModal();
         } else if (state.currentNote) {
@@ -286,8 +599,8 @@ function setupEventListeners() {
     });
 
     // Close modal
-    elements.closeModal.addEventListener('click', hideExportModal);
-    elements.exportModal.addEventListener('click', (e) => {
+    elements.closeModal?.addEventListener('click', hideExportModal);
+    elements.exportModal?.addEventListener('click', (e) => {
         if (e.target === elements.exportModal) {
             hideExportModal();
         }
@@ -295,21 +608,7 @@ function setupEventListeners() {
 
     // Handle browser back/forward
     window.addEventListener('popstate', () => {
-        if (window.location.hash) {
-            const noteId = window.location.hash.slice(1);
-            const note = state.notes.find(n => n.id === noteId);
-            if (note) {
-                navigateToNote(note);
-            }
-        } else {
-            // Show welcome screen
-            state.currentNote = null;
-            elements.noteContent.style.display = 'none';
-            elements.welcomeScreen.style.display = 'flex';
-            document.querySelectorAll('.tree-note').forEach(el => {
-                el.classList.remove('active');
-            });
-        }
+        handleInitialRoute();
     });
 
     // Keyboard shortcuts
@@ -317,14 +616,24 @@ function setupEventListeners() {
         // Cmd/Ctrl + K for search focus
         if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
             e.preventDefault();
-            document.getElementById('searchInput').focus();
+            document.getElementById('searchInput')?.focus();
         }
 
         // Escape to close modal or clear search
         if (e.key === 'Escape') {
-            if (elements.exportModal.classList.contains('active')) {
+            if (elements.exportModal?.classList.contains('active')) {
                 hideExportModal();
             }
+        }
+    });
+
+    // Before unload - send final time update
+    window.addEventListener('beforeunload', () => {
+        if (state.currentViewId && timeSpent > 0) {
+            navigator.sendBeacon('/api/analytics/time', JSON.stringify({
+                viewId: state.currentViewId,
+                seconds: timeSpent
+            }));
         }
     });
 }
@@ -332,20 +641,22 @@ function setupEventListeners() {
 // Update export button state
 function updateExportButton() {
     const count = state.selectedNotes.size;
-    elements.exportBtn.classList.toggle('active', count > 0);
+    elements.exportBtn?.classList.toggle('active', count > 0);
 }
 
 // Show export modal
 function showExportModal() {
     const count = state.selectedNotes.size;
-    document.getElementById('selectedCount').textContent =
-        `${count} note${count !== 1 ? 's' : ''} selected`;
-    elements.exportModal.classList.add('active');
+    const countEl = document.getElementById('selectedCount');
+    if (countEl) {
+        countEl.textContent = `${count} note${count !== 1 ? 's' : ''} selected`;
+    }
+    elements.exportModal?.classList.add('active');
 }
 
 // Hide export modal
 function hideExportModal() {
-    elements.exportModal.classList.remove('active');
+    elements.exportModal?.classList.remove('active');
 }
 
 // Utility: escape HTML
@@ -358,8 +669,9 @@ function escapeHtml(text) {
 // Expose state and functions for other modules
 window.obsidianPublisher = {
     state,
-    navigateToNote,
-    hideExportModal
+    displayNote,
+    hideExportModal,
+    escapeHtml
 };
 
 // Initialize when DOM is ready

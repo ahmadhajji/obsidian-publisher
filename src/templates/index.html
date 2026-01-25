@@ -6,9 +6,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Clinical Vault - Medical education notes and knowledge base">
   <title>Clinical Vault</title>
+
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#7c3aed">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Clinical Vault">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+
   <!-- Favicon -->
   <link rel="icon" type="image/svg+xml"
-    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%237c3aed'/%3E%3Cstop offset='100%25' stop-color='%23a78bfa'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='20' fill='url(%23g)'/%3E%3Cpath d='M50 20 L50 50 M35 35 L65 35 M30 55 Q50 75 70 55' stroke='white' stroke-width='8' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%237c3aed'/%3E%3Cstop offset='100%25' stop-color='%23a78bfa'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='20' fill='url(%23g)'/%3E%3Ccircle cx='35' cy='25' r='8' stroke='white' stroke-width='5' fill='none'/%3E%3Ccircle cx='65' cy='25' r='8' stroke='white' stroke-width='5' fill='none'/%3E%3Cpath d='M35 33 L35 50 Q35 70 50 70 Q65 70 65 50 L65 33' stroke='white' stroke-width='5' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='78' r='10' fill='white'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -39,22 +48,22 @@
         <div class="search-results" id="searchResults"></div>
       </div>
     </div>
-    <div class="header-right">
-      <button class="icon-btn" id="settingsBtn" aria-label="Settings" title="Settings">
+    <div class="header-right toolbar">
+      <button class="icon-btn toolbar-btn" id="settingsBtn" aria-label="Settings" title="Settings">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path
             d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
           <circle cx="12" cy="12" r="3" />
         </svg>
       </button>
-      <button class="icon-btn" id="exportBtn" aria-label="Export" title="Export selected notes">
+      <button class="icon-btn toolbar-btn" id="exportBtn" aria-label="Export" title="Export selected notes">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
           <polyline points="7 10 12 15 17 10" />
           <line x1="12" y1="15" x2="12" y2="3" />
         </svg>
       </button>
-      <button class="icon-btn" id="themeToggle" aria-label="Toggle theme">
+      <button class="icon-btn toolbar-btn" id="themeToggle" aria-label="Toggle theme">
         <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
           stroke-width="2">
           <circle cx="12" cy="12" r="5" />
@@ -88,57 +97,67 @@
     </aside>
 
     <!-- Content -->
-    <main class="content" id="content">
-      <div class="content-inner">
-        <div class="welcome-screen" id="welcomeScreen">
-          <div class="welcome-logo">
-            <svg width="80" height="80" viewBox="0 0 100 100">
-              <defs>
-                <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stop-color="#7c3aed" />
-                  <stop offset="100%" stop-color="#a78bfa" />
-                </linearGradient>
-              </defs>
-              <rect width="100" height="100" rx="20" fill="url(#logoGrad)" />
-              <path d="M50 20 L50 50 M35 35 L65 35 M30 55 Q50 75 70 55" stroke="white" stroke-width="8"
-                stroke-linecap="round" fill="none" />
-            </svg>
+    <main class="main-content">
+      <!-- Tabs Bar (injected by JS, but we add container for structure) -->
+      <div id="tabsBar" class="tabs-bar"></div>
+
+      <!-- Content Area -->
+      <div class="content" id="contentArea">
+        <div class="content-inner">
+          <div class="welcome-screen" id="welcomeScreen">
+            <div class="welcome-logo">
+              <svg width="80" height="80" viewBox="0 0 100 100">
+                <defs>
+                  <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#7c3aed" />
+                    <stop offset="100%" stop-color="#a78bfa" />
+                  </linearGradient>
+                </defs>
+                <rect width="100" height="100" rx="20" fill="url(#logoGrad)" />
+                <!-- Stethoscope -->
+                <circle cx="35" cy="25" r="8" stroke="white" stroke-width="5" fill="none" />
+                <circle cx="65" cy="25" r="8" stroke="white" stroke-width="5" fill="none" />
+                <path d="M35 33 L35 50 Q35 70 50 70 Q65 70 65 50 L65 33" stroke="white" stroke-width="5" fill="none"
+                  stroke-linecap="round" />
+                <circle cx="50" cy="78" r="10" fill="white" />
+              </svg>
+            </div>
+            <h2>Welcome to Clinical Vault</h2>
+            <p class="welcome-subtitle">Your medical knowledge, beautifully organized</p>
+            <div class="welcome-features">
+              <div class="welcome-feature">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.35-4.35" />
+                </svg>
+                <span>Search across all notes</span>
+              </div>
+              <div class="welcome-feature">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                </svg>
+                <span>Wiki-style internal links</span>
+              </div>
+              <div class="welcome-feature">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                <span>Export as MD or PDF</span>
+              </div>
+            </div>
+            <p class="welcome-hint">Select a note from the sidebar to start reading</p>
           </div>
-          <h2>Welcome to Clinical Vault</h2>
-          <p class="welcome-subtitle">Your medical knowledge, beautifully organized</p>
-          <div class="welcome-features">
-            <div class="welcome-feature">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.35-4.35" />
-              </svg>
-              <span>Search across all notes</span>
-            </div>
-            <div class="welcome-feature">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-              </svg>
-              <span>Wiki-style internal links</span>
-            </div>
-            <div class="welcome-feature">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
-              <span>Export as MD or PDF</span>
-            </div>
-          </div>
-          <p class="welcome-hint">Select a note from the sidebar to start reading</p>
+          <article class="note-content" id="noteContent" style="display: none;">
+            <header class="note-header">
+              <h1 class="note-title" id="noteTitle"></h1>
+              <div class="note-meta" id="noteMeta"></div>
+            </header>
+            <div class="note-body" id="noteBody"></div>
+          </article>
         </div>
-        <article class="note-content" id="noteContent" style="display: none;">
-          <header class="note-header">
-            <h1 class="note-title" id="noteTitle"></h1>
-            <div class="note-meta" id="noteMeta"></div>
-          </header>
-          <div class="note-body" id="noteBody"></div>
-        </article>
       </div>
     </main>
   </div>
@@ -253,8 +272,12 @@
               </linearGradient>
             </defs>
             <rect width="100" height="100" rx="20" fill="url(#popupGrad)" />
-            <path d="M50 20 L50 50 M35 35 L65 35 M30 55 Q50 75 70 55" stroke="white" stroke-width="8"
-              stroke-linecap="round" fill="none" />
+            <!-- Stethoscope -->
+            <circle cx="35" cy="25" r="8" stroke="white" stroke-width="5" fill="none" />
+            <circle cx="65" cy="25" r="8" stroke="white" stroke-width="5" fill="none" />
+            <path d="M35 33 L35 50 Q35 70 50 70 Q65 70 65 50 L65 33" stroke="white" stroke-width="5" fill="none"
+              stroke-linecap="round" />
+            <circle cx="50" cy="78" r="10" fill="white" />
           </svg>
         </div>
         <h2>Welcome to Clinical Vault</h2>
@@ -287,10 +310,29 @@
     </div>
   </div>
 
+  <!-- Core Scripts -->
   <script src="scripts/app.js"></script>
   <script src="scripts/search.js"></script>
   <script src="scripts/export.js"></script>
   <script src="scripts/settings.js"></script>
+
+  <!-- V2 Scripts -->
+  <script src="scripts/tabs.js"></script>
+  <script src="scripts/typography.js"></script>
+  <script src="scripts/auth-ui.js"></script>
+  <script src="scripts/comments-ui.js"></script>
+  <script src="scripts/analytics-dashboard.js"></script>
+
+  <!-- Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => console.log('✅ Service Worker registered'))
+          .catch(err => console.log('Service Worker registration failed:', err));
+      });
+    }
+  </script>
 </body>
 
 </html>
