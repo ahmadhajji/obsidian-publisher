@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="About Clinical Vault - Your medical knowledge, beautifully organized">
+  <title>About - Clinical Vault</title>
+
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#7c3aed">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Clinical Vault">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%237c3aed'/%3E%3Cstop offset='100%25' stop-color='%23a78bfa'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='20' fill='url(%23g)'/%3E%3Ccircle cx='35' cy='25' r='8' stroke='white' stroke-width='5' fill='none'/%3E%3Ccircle cx='65' cy='25' r='8' stroke='white' stroke-width='5' fill='none'/%3E%3Cpath d='M35 33 L35 50 Q35 70 50 70 Q65 70 65 50 L65 33' stroke='white' stroke-width='5' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='78' r='10' fill='white'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="styles/main.css">
+  <style>
+    .static-page {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 60px 24px;
+    }
+
+    .static-page h1 {
+      font-family: var(--font-heading);
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-light));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .static-page .subtitle {
+      font-size: 1.2rem;
+      color: var(--text-secondary);
+      margin-bottom: 48px;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+      margin-bottom: 48px;
+    }
+
+    .feature-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      transition: all var(--transition-normal);
+    }
+
+    .feature-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(124, 58, 237, 0.15);
+    }
+
+    .feature-card .icon {
+      width: 48px;
+      height: 48px;
+      background: var(--accent-muted);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      font-size: 1.5rem;
+    }
+
+    .feature-card h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text-primary);
+    }
+
+    .feature-card p {
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .disclaimer-box {
+      background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(251, 191, 36, 0.05));
+      border: 1px solid rgba(251, 191, 36, 0.3);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-bottom: 48px;
+    }
+
+    .disclaimer-box .icon {
+      font-size: 1.5rem;
+      margin-bottom: 12px;
+    }
+
+    .disclaimer-box h3 {
+      color: #fbbf24;
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .disclaimer-box p {
+      color: var(--text-secondary);
+      line-height: 1.7;
+    }
+
+    .faq-section h2 {
+      font-family: var(--font-heading);
+      font-size: 1.5rem;
+      margin-bottom: 24px;
+      color: var(--text-primary);
+    }
+
+    .faq-item {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+
+    .faq-question {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      background: none;
+      border: none;
+      color: var(--text-primary);
+      font-size: 1rem;
+      font-weight: 500;
+      text-align: left;
+      cursor: pointer;
+      transition: background var(--transition-fast);
+    }
+
+    .faq-question:hover {
+      background: var(--bg-hover);
+    }
+
+    .faq-question svg {
+      width: 20px;
+      height: 20px;
+      color: var(--text-muted);
+      transition: transform var(--transition-fast);
+    }
+
+    .faq-item.open .faq-question svg {
+      transform: rotate(180deg);
+    }
+
+    .faq-answer {
+      display: none;
+      padding: 0 20px 16px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+    }
+
+    .faq-item.open .faq-answer {
+      display: block;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 500;
+      margin-bottom: 32px;
+      transition: opacity var(--transition-fast);
+    }
+
+    .back-link:hover {
+      opacity: 0.8;
+    }
+
+    .back-link svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .page-footer {
+      margin-top: 48px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border-color);
+      text-align: center;
+    }
+
+    .page-footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .page-footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="static-page">
+    <a href="/" class="back-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 12H5M12 19l-7-7 7-7" />
+      </svg>
+      Back to Clinical Vault
+    </a>
+
+    <h1>About Clinical Vault</h1>
+    <p class="subtitle">Your medical knowledge, beautifully organized and accessible anywhere.</p>
+
+    <!-- Features Grid -->
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="icon">🔍</div>
+        <h3>Full-Text Search</h3>
+        <p>Find anything across all your notes instantly with powerful search.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">🔗</div>
+        <h3>Wiki-Style Links</h3>
+        <p>Connected notes with [[wikilinks]] just like in Obsidian.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">📥</div>
+        <h3>Export Options</h3>
+        <p>Download notes as Markdown or beautifully formatted PDFs.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">🌙</div>
+        <h3>Dark Mode</h3>
+        <p>Easy on the eyes with a beautiful dark theme.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">📱</div>
+        <h3>Works Offline</h3>
+        <p>Progressive Web App - install it and access notes offline.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">💬</div>
+        <h3>Annotations</h3>
+        <p>Add comments and annotations to notes for collaborative learning.</p>
+      </div>
+    </div>
+
+    <!-- AI Disclaimer -->
+    <div class="disclaimer-box">
+      <div class="icon">🤖</div>
+      <h3>A Note About AI</h3>
+      <p>
+        While AI tools were used to assist in developing this website and organizing content,
+        <strong>all published medical information has been reviewed and verified by a human</strong>.
+        We believe in leveraging technology responsibly while maintaining accuracy and quality.
+        If you spot any errors, please use the <a href="/feedback">feedback form</a> to let us know.
+      </p>
+    </div>
+
+    <!-- FAQ Section -->
+    <div class="faq-section">
+      <h2>Frequently Asked Questions</h2>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          What is Clinical Vault?
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
+        <div class="faq-answer">
+          Clinical Vault is a web-based platform for publishing and sharing medical education notes.
+          It's built on top of Obsidian, a powerful note-taking app, and makes your notes accessible
+          from any device with a beautiful, modern interface.
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          Is the content free to access?
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
+        <div class="faq-answer">
+          Yes! All published notes are freely accessible. You can read, search, and navigate
+          the content without any restrictions. Creating an account unlocks additional features
+          like saving reading progress and adding personal annotations.
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          How can I contribute or report errors?
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
+        <div class="faq-answer">
+          We welcome feedback! Use the <a href="/feedback">feedback form</a> to report errors,
+          suggest improvements, or share your thoughts. Every piece of feedback helps make
+          Clinical Vault better for everyone.
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          Can I use this offline?
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
+        <div class="faq-answer">
+          Yes! Clinical Vault is a Progressive Web App (PWA). You can install it on your device
+          and access previously viewed notes even without an internet connection. Just look for
+          the "Install" option in your browser.
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          Is my data private?
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
+        <div class="faq-answer">
+          Absolutely. Your personal annotations and reading history are private by default.
+          We don't share your data with third parties. You can control your privacy settings
+          in your account preferences.
+        </div>
+      </div>
+    </div>
+
+    <div class="page-footer">
+      <p>Have questions or feedback? <a href="/feedback">Get in touch</a></p>
+    </div>
+  </div>
+
+  <script>
+    // FAQ Accordion
+    document.querySelectorAll('.faq-question').forEach(button => {
+      button.addEventListener('click', () => {
+        const item = button.parentElement;
+        item.classList.toggle('open');
+      });
+    });
+
+    // Theme persistence
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  </script>
+</body>
+
+</html>

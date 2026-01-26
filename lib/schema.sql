@@ -1,11 +1,16 @@
 -- Obsidian Publisher V2 Database Schema
 
--- Users table
+-- Users table (supports both email/password and OAuth)
 CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
     email TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
+    password_hash TEXT,           -- NULL for OAuth-only users
     display_name TEXT,
+    avatar_url TEXT,              -- Profile picture from OAuth
+    oauth_provider TEXT,          -- 'google', 'apple', or NULL for email auth
+    oauth_id TEXT,                -- Provider's user ID
+    role TEXT DEFAULT 'member',   -- 'admin', 'moderator', 'member', 'blocked'
+    is_blocked INTEGER DEFAULT 0, -- Quick check for blocked status
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -20,7 +25,7 @@ CREATE TABLE IF NOT EXISTS sessions (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Comments table
+-- Comments table (supports inline annotations)
 CREATE TABLE IF NOT EXISTS comments (
     id TEXT PRIMARY KEY,
     note_id TEXT NOT NULL,
@@ -28,6 +33,11 @@ CREATE TABLE IF NOT EXISTS comments (
     content TEXT NOT NULL,
     is_public INTEGER DEFAULT 0,
     parent_id TEXT,
+    -- Inline annotation fields
+    selection_start INTEGER,      -- Character offset where selection starts
+    selection_end INTEGER,        -- Character offset where selection ends
+    selection_text TEXT,          -- The selected text (for reference)
+    is_resolved INTEGER DEFAULT 0,-- Whether the thread is resolved
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -74,6 +84,18 @@ CREATE TABLE IF NOT EXISTS user_settings (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+-- Feedback submissions
+CREATE TABLE IF NOT EXISTS feedback (
+    id TEXT PRIMARY KEY,
+    user_id TEXT,
+    email TEXT,
+    type TEXT DEFAULT 'other',
+    message TEXT NOT NULL,
+    is_read INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token);
 CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
@@ -82,3 +104,4 @@ CREATE INDEX IF NOT EXISTS idx_comments_user ON comments(user_id);
 CREATE INDEX IF NOT EXISTS idx_page_views_note ON page_views(note_id);
 CREATE INDEX IF NOT EXISTS idx_page_views_user ON page_views(user_id);
 CREATE INDEX IF NOT EXISTS idx_reading_history_user ON reading_history(user_id);
+CREATE INDEX IF NOT EXISTS idx_feedback_read ON feedback(is_read);

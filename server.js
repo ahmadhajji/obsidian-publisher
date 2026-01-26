@@ -10,10 +10,23 @@ const cookieParser = require('cookie-parser');
 
 // Import modules
 const { fetchNotes, clearCache, getAttachment } = require('./lib/drive');
-const { registerUser, loginUser, logoutUser, authMiddleware, requireAuth } = require('./lib/auth');
+const { 
+    getGoogleAuthUrl, 
+    handleGoogleCallback, 
+    logoutUser, 
+    authMiddleware, 
+    requireAuth, 
+    requireAdmin,
+    requireModerator,
+    getAllUsers,
+    setUserRole,
+    blockUser,
+    unblockUser,
+    isOAuthConfigured
+} = require('./lib/oauth');
 const { createComment, getCommentsForNote, updateComment, deleteComment, threadComments } = require('./lib/comments');
 const { recordPageView, updateTimeSpent, getDashboardStats, saveReadingPosition, getReadingHistory } = require('./lib/analytics');
-const { statements } = require('./lib/db');
+const { statements, db } = require('./lib/db');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -31,19 +44,46 @@ app.use(authMiddleware);
 app.use(express.static(path.join(__dirname, 'dist')));
 
 // ===========================================
-// AUTH ROUTES
+// AUTH ROUTES (OAuth)
 // ===========================================
 
-// Register new user
-app.post('/api/auth/register', async (req, res) => {
-    try {
-        const { email, password, displayName } = req.body;
+// Check OAuth configuration status
+app.get('/api/auth/config', (req, res) => {
+    res.json({ 
+        googleEnabled: isOAuthConfigured(),
+        appleEnabled: false // Not implemented yet
+    });
+});
 
-        if (!email || !password) {
-            return res.status(400).json({ error: 'Email and password required' });
+// Start Google OAuth flow
+app.get('/auth/google', (req, res) => {
+    try {
+        if (!isOAuthConfigured()) {
+            return res.status(503).json({ error: 'Google OAuth not configured' });
+        }
+        const authUrl = getGoogleAuthUrl();
+        res.redirect(authUrl);
+    } catch (error) {
+        console.error('Google OAuth error:', error);
+        res.redirect('/?error=oauth_failed');
+    }
+});
+
+// Google OAuth callback
+app.get('/auth/google/callback', async (req, res) => {
+    try {
+        const { code, error } = req.query;
+        
+        if (error) {
+            console.error('Google OAuth denied:', error);
+            return res.redirect('/?error=oauth_denied');
         }
 
-        const result = await registerUser(email, password, displayName);
+        if (!code) {
+            return res.redirect('/?error=no_code');
+        }
+
+        const result = await handleGoogleCallback(code);
 
         // Set session cookie
         res.cookie('session_token', result.session.token, {
@@ -53,42 +93,11 @@ app.post('/api/auth/register', async (req, res) => {
             maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
         });
 
-        res.json({
-            user: result.user,
-            expiresAt: result.session.expiresAt
-        });
+        // Redirect to home page
+        res.redirect('/');
     } catch (error) {
-        console.error('Registration error:', error);
-        res.status(400).json({ error: error.message });
-    }
-});
-
-// Login
-app.post('/api/auth/login', async (req, res) => {
-    try {
-        const { email, password } = req.body;
-
-        if (!email || !password) {
-            return res.status(400).json({ error: 'Email and password required' });
-        }
-
-        const result = await loginUser(email, password);
-
-        // Set session cookie
-        res.cookie('session_token', result.session.token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 30 * 24 * 60 * 60 * 1000
-        });
-
-        res.json({
-            user: result.user,
-            expiresAt: result.session.expiresAt
-        });
-    } catch (error) {
-        console.error('Login error:', error);
-        res.status(401).json({ error: error.message });
+        console.error('Google OAuth callback error:', error);
+        res.redirect('/?error=oauth_failed');
     }
 });
 
@@ -105,9 +114,96 @@ app.post('/api/auth/logout', (req, res) => {
 // Get current user
 app.get('/api/auth/me', (req, res) => {
     if (req.user) {
-        res.json({ user: req.user });
+        res.json({ 
+            user: req.user,
+            isAdmin: req.user.role === 'admin'
+        });
     } else {
         res.json({ user: null });
+    }
+});
+
+// ===========================================
+// ADMIN ROUTES
+// ===========================================
+
+// Get all users (admin only)
+app.get('/api/admin/users', requireAdmin, (req, res) => {
+    try {
+        const users = getAllUsers();
+        res.json({ users });
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        res.status(500).json({ error: 'Failed to fetch users' });
+    }
+});
+
+// Update user role (admin only)
+app.post('/api/admin/users/:userId/role', requireAdmin, (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { role } = req.body;
+
+        if (userId === req.user.id) {
+            return res.status(400).json({ error: 'Cannot change your own role' });
+        }
+
+        setUserRole(userId, role);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error updating user role:', error);
+        res.status(400).json({ error: error.message });
+    }
+});
+
+// Block user (admin only)
+app.post('/api/admin/users/:userId/block', requireAdmin, (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        if (userId === req.user.id) {
+            return res.status(400).json({ error: 'Cannot block yourself' });
+        }
+
+        blockUser(userId);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error blocking user:', error);
+        res.status(400).json({ error: error.message });
+    }
+});
+
+// Unblock user (admin only)
+app.post('/api/admin/users/:userId/unblock', requireAdmin, (req, res) => {
+    try {
+        const { userId } = req.params;
+        unblockUser(userId);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error unblocking user:', error);
+        res.status(400).json({ error: error.message });
+    }
+});
+
+// Get all feedback (admin only)
+app.get('/api/admin/feedback', requireAdmin, (req, res) => {
+    try {
+        const feedback = statements.getAllFeedback.all();
+        res.json({ feedback });
+    } catch (error) {
+        console.error('Error fetching feedback:', error);
+        res.status(500).json({ error: 'Failed to fetch feedback' });
+    }
+});
+
+// Mark feedback as read (admin only)
+app.post('/api/admin/feedback/:feedbackId/read', requireAdmin, (req, res) => {
+    try {
+        statements.markFeedbackRead.run(req.params.feedbackId);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error marking feedback:', error);
+        res.status(500).json({ error: 'Failed to update feedback' });
     }
 });
 
@@ -335,12 +431,49 @@ app.get('/api/share/:noteId', async (req, res) => {
 });
 
 // ===========================================
+// FEEDBACK ROUTES
+// ===========================================
+
+// Submit feedback
+app.post('/api/feedback', (req, res) => {
+    try {
+        const { type, email, message } = req.body;
+
+        if (!message || !message.trim()) {
+            return res.status(400).json({ error: 'Message is required' });
+        }
+
+        const id = require('uuid').v4();
+        const userId = req.user?.id || null;
+        const feedbackEmail = email || req.user?.email || null;
+
+        statements.createFeedback.run(id, userId, feedbackEmail, type || 'other', message.trim());
+
+        console.log(`📬 New feedback received: ${type} from ${feedbackEmail || 'anonymous'}`);
+
+        res.status(201).json({ success: true, message: 'Feedback submitted successfully' });
+    } catch (error) {
+        console.error('Error submitting feedback:', error);
+        res.status(500).json({ error: 'Failed to submit feedback' });
+    }
+});
+
+// ===========================================
 // HEALTH & FALLBACK
 // ===========================================
 
 // Health check
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Static pages - serve before SPA fallback
+app.get('/about', (req, res) => {
+    res.sendFile(path.join(__dirname, 'dist', 'about.html'));
+});
+
+app.get('/feedback', (req, res) => {
+    res.sendFile(path.join(__dirname, 'dist', 'feedback.html'));
 });
 
 // Serve index.html for all other routes (SPA)

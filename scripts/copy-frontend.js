@@ -12,10 +12,18 @@ const distDir = path.join(__dirname, '..', 'dist');
 fs.mkdirSync(path.join(distDir, 'styles'), { recursive: true });
 fs.mkdirSync(path.join(distDir, 'scripts'), { recursive: true });
 
-// Copy HTML template
+// Copy HTML templates
 fs.copyFileSync(
     path.join(srcDir, 'templates', 'index.html'),
     path.join(distDir, 'index.html')
+);
+fs.copyFileSync(
+    path.join(srcDir, 'templates', 'about.html'),
+    path.join(distDir, 'about.html')
+);
+fs.copyFileSync(
+    path.join(srcDir, 'templates', 'feedback.html'),
+    path.join(distDir, 'feedback.html')
 );
 
 // Copy CSS
