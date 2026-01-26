@@ -109,15 +109,21 @@ function displayResults(results, terms) {
         searchResults.querySelectorAll('.search-result-item').forEach(item => {
             item.addEventListener('click', () => {
                 const noteId = item.dataset.noteId;
-                const { state, navigateToNote } = window.obsidianPublisher;
+                const { state } = window.obsidianPublisher;
                 const note = state.notes.find(n => n.id === noteId);
                 if (note) {
-                    // Check if we should open in new tab
-                    if (window._openInNewTab && window.tabsManager) {
-                        window.tabsManager.openTab(note, true);
-                        window._openInNewTab = false;
-                    } else {
-                        navigateToNote(note);
+                    // Use tabs manager to open the note
+                    if (window.tabsManager) {
+                        if (window._openInNewTab) {
+                            window.tabsManager.openTab(note, true);
+                            window._openInNewTab = false;
+                        } else if (window.tabsManager.getActiveTab()) {
+                            window.tabsManager.navigateInTab(note);
+                        } else {
+                            window.tabsManager.openTab(note);
+                        }
+                    } else if (window.obsidianPublisher.displayNote) {
+                        window.obsidianPublisher.displayNote(note);
                     }
                     hideSearchResults();
                     searchInput.value = '';

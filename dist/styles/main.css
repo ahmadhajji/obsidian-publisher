@@ -1561,6 +1561,7 @@ body {
   transition: all var(--transition-fast);
   flex-shrink: 0;
   margin-left: 4px;
+  order: 999; /* Always appear at the end of the tabs bar */
 }
 
 .new-tab-btn:hover {
