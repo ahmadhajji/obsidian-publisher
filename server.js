@@ -435,7 +435,7 @@ app.get('/api/share/:noteId', async (req, res) => {
 // ===========================================
 
 // Submit feedback
-app.post('/api/feedback', (req, res) => {
+app.post('/api/feedback', async (req, res) => {
     try {
         const { type, email, message } = req.body;
 
@@ -450,6 +450,19 @@ app.post('/api/feedback', (req, res) => {
         statements.createFeedback.run(id, userId, feedbackEmail, type || 'other', message.trim());
 
         console.log(`📬 New feedback received: ${type} from ${feedbackEmail || 'anonymous'}`);
+
+        // Send email notification to admin
+        try {
+            const { sendFeedbackNotification } = require('./lib/email');
+            await sendFeedbackNotification({
+                type: type || 'other',
+                email: feedbackEmail,
+                message: message.trim()
+            });
+        } catch (emailError) {
+            console.error('Failed to send email notification:', emailError);
+            // Don't fail the request if email fails
+        }
 
         res.status(201).json({ success: true, message: 'Feedback submitted successfully' });
     } catch (error) {
