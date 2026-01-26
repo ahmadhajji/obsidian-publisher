@@ -41,6 +41,22 @@ class TabsManager {
             mainContent.insertBefore(this.tabsContainer, mainContent.firstChild);
         }
 
+        // Create New Tab button if it doesn't exist
+        if (!document.getElementById('newTabBtn')) {
+            const newTabBtn = document.createElement('button');
+            newTabBtn.id = 'newTabBtn';
+            newTabBtn.className = 'new-tab-btn';
+            newTabBtn.title = 'New Tab (Cmd+T)';
+            newTabBtn.setAttribute('aria-label', 'Open new tab');
+            newTabBtn.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14M5 12h14"/>
+                </svg>
+            `;
+            newTabBtn.addEventListener('click', () => this.openNewTab());
+            this.tabsContainer.appendChild(newTabBtn);
+        }
+
         this.contentContainer = document.getElementById('contentArea');
     }
 
@@ -148,6 +164,30 @@ class TabsManager {
             return this.openTab(note, true);
         }
         return null;
+    }
+
+    /**
+     * Open a new blank tab - shows note picker or welcome screen
+     */
+    openNewTab() {
+        // Focus the search input to help user find a note
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.focus();
+            searchInput.placeholder = 'Search for a note to open in new tab...';
+            
+            // Store that we want to open in new tab
+            window._openInNewTab = true;
+            
+            // Reset placeholder after blur
+            searchInput.addEventListener('blur', () => {
+                searchInput.placeholder = 'Search notes... (⌘K)';
+                // Reset after a delay to allow click-through
+                setTimeout(() => {
+                    window._openInNewTab = false;
+                }, 300);
+            }, { once: true });
+        }
     }
 
     /**
@@ -397,6 +437,12 @@ class TabsManager {
      */
     setupKeyboardShortcuts() {
         document.addEventListener('keydown', (e) => {
+            // Cmd/Ctrl + T - new tab
+            if ((e.metaKey || e.ctrlKey) && e.key === 't' && !e.shiftKey) {
+                e.preventDefault();
+                this.openNewTab();
+            }
+
             // Cmd/Ctrl + W - close tab
             if ((e.metaKey || e.ctrlKey) && e.key === 'w') {
                 e.preventDefault();

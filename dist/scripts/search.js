@@ -112,7 +112,13 @@ function displayResults(results, terms) {
                 const { state, navigateToNote } = window.obsidianPublisher;
                 const note = state.notes.find(n => n.id === noteId);
                 if (note) {
-                    navigateToNote(note);
+                    // Check if we should open in new tab
+                    if (window._openInNewTab && window.tabsManager) {
+                        window.tabsManager.openTab(note, true);
+                        window._openInNewTab = false;
+                    } else {
+                        navigateToNote(note);
+                    }
                     hideSearchResults();
                     searchInput.value = '';
                 }

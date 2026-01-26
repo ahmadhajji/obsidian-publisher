@@ -1546,6 +1546,34 @@ body {
   height: 12px;
 }
 
+/* New Tab Button */
+.new-tab-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+  margin-left: 4px;
+}
+
+.new-tab-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.new-tab-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
 /* Tab context menu */
 .tab-context-menu {
   position: fixed;
