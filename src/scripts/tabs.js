@@ -170,23 +170,37 @@ class TabsManager {
      * Open a new blank tab - shows note picker or welcome screen
      */
     openNewTab() {
+        // Store that we want to open in new tab
+        window._openInNewTab = true;
+        
+        // On mobile, open the sidebar to let user pick a note
+        const sidebar = document.getElementById('sidebar');
+        if (window.innerWidth <= 768 && sidebar) {
+            sidebar.classList.add('open');
+        }
+        
         // Focus the search input to help user find a note
         const searchInput = document.getElementById('searchInput');
         if (searchInput) {
             searchInput.focus();
-            searchInput.placeholder = 'Search for a note to open in new tab...';
+            searchInput.placeholder = '🔍 Search for a note to open in new tab...';
+            searchInput.classList.add('new-tab-mode');
             
-            // Store that we want to open in new tab
-            window._openInNewTab = true;
-            
-            // Reset placeholder after blur
-            searchInput.addEventListener('blur', () => {
+            // Reset after blur
+            const resetSearch = () => {
                 searchInput.placeholder = 'Search notes... (⌘K)';
+                searchInput.classList.remove('new-tab-mode');
                 // Reset after a delay to allow click-through
                 setTimeout(() => {
                     window._openInNewTab = false;
-                }, 300);
-            }, { once: true });
+                }, 500);
+            };
+            
+            searchInput.addEventListener('blur', resetSearch, { once: true });
+        } else {
+            // If no search available, show a tip
+            alert('Click on any note in the sidebar to open it in a new tab');
+            window._openInNewTab = false;
         }
     }
 

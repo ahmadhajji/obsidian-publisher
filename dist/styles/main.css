@@ -191,6 +191,23 @@ body {
   color: var(--text-muted);
 }
 
+/* New Tab Mode - highlight search when opening a new tab */
+.search-input.new-tab-mode {
+  border-color: var(--accent);
+  background: var(--accent-muted);
+  animation: pulse-border 1.5s ease-in-out infinite;
+}
+
+.search-input.new-tab-mode::placeholder {
+  color: var(--accent);
+}
+
+@keyframes pulse-border {
+  0%, 100% { box-shadow: 0 0 0 3px var(--accent-muted); }
+  50% { box-shadow: 0 0 0 6px transparent; }
+}
+
+
 .search-results {
   position: absolute;
   top: calc(100% + 8px);

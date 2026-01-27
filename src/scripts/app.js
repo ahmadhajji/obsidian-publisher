@@ -366,9 +366,14 @@ function createNoteElement(noteMeta) {
 
         const note = state.notes.find(n => n.id === noteMeta.id);
         if (note) {
-            // Check for middle-click or Cmd/Ctrl+click for new tab
-            if (e.button === 1 || e.metaKey || e.ctrlKey) {
+            // Check for middle-click, Cmd/Ctrl+click, or "new tab mode" for new tab
+            if (e.button === 1 || e.metaKey || e.ctrlKey || window._openInNewTab) {
                 window.tabsManager?.openTab(note, true);
+                window._openInNewTab = false;
+                // Close sidebar on mobile after selecting
+                if (window.innerWidth <= 768) {
+                    document.getElementById('sidebar')?.classList.remove('open');
+                }
             } else if (window.tabsManager?.getActiveTab()) {
                 window.tabsManager.navigateInTab(note);
             } else {
