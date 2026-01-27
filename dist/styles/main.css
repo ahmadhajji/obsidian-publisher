@@ -379,7 +379,39 @@ body {
   padding: 8px 0;
 }
 
-/* File Tree Items */
+/* Sidebar Footer - About & Feedback Links */
+.sidebar-footer {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+}
+
+.sidebar-footer-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  flex: 1;
+  justify-content: center;
+}
+
+.sidebar-footer-link:hover {
+  color: var(--accent);
+  background: var(--accent-muted);
+}
+
+.sidebar-footer-link svg {
+  flex-shrink: 0;
+}
+
 .tree-folder {
   user-select: none;
 }
