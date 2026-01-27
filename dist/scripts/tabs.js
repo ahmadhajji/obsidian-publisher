@@ -66,6 +66,11 @@ class TabsManager {
      * @param {boolean} newTab - Force new tab (middle-click, Cmd+click)
      */
     openTab(note, newTab = false) {
+        // Ensure tabs UI is created
+        if (!this.tabsContainer) {
+            this.createTabsUI();
+        }
+
         // Check if note is already open
         const existingTab = this.tabs.find(t => t.noteId === note.id);
 
@@ -364,7 +369,11 @@ class TabsManager {
             this.showTabContextMenu(tab.id, e.clientX, e.clientY);
         });
 
-        this.tabsContainer.appendChild(tabEl);
+        if (this.tabsContainer) {
+            this.tabsContainer.appendChild(tabEl);
+        } else {
+            console.warn('TabsManager: tabsContainer not found, tab not rendered');
+        }
     }
 
     /**
