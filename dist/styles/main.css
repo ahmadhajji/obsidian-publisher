@@ -379,39 +379,6 @@ body {
   padding: 8px 0;
 }
 
-/* Sidebar Footer - About & Feedback Links */
-.sidebar-footer {
-  display: flex;
-  gap: 8px;
-  padding: 12px;
-  border-top: 1px solid var(--border-color);
-  background: var(--bg-secondary);
-}
-
-.sidebar-footer-link {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  color: var(--text-muted);
-  text-decoration: none;
-  font-size: 0.85rem;
-  font-weight: 500;
-  border-radius: var(--radius-sm);
-  transition: all var(--transition-fast);
-  flex: 1;
-  justify-content: center;
-}
-
-.sidebar-footer-link:hover {
-  color: var(--accent);
-  background: var(--accent-muted);
-}
-
-.sidebar-footer-link svg {
-  flex-shrink: 0;
-}
-
 .tree-folder {
   user-select: none;
 }
@@ -1324,6 +1291,41 @@ body {
 .settings-toggle span {
   font-size: 0.95rem;
   color: var(--text-secondary);
+}
+
+/* Settings Divider */
+.settings-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 8px 0;
+}
+
+/* Settings Links */
+.settings-links {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settings-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.95rem;
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.settings-link:hover {
+  color: var(--accent);
+  background: var(--accent-muted);
+}
+
+.settings-link svg {
+  flex-shrink: 0;
 }
 
 /* Toggle Switch */
