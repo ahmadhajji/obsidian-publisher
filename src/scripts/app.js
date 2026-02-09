@@ -429,7 +429,9 @@ function displayNote(note) {
     // Render breadcrumb
     elements.noteMeta.innerHTML = renderBreadcrumb(note);
 
-    elements.noteBody.innerHTML = note.html;
+    // Render properties if frontmatter exists
+    const propertiesHtml = renderProperties(note.frontmatter);
+    elements.noteBody.innerHTML = propertiesHtml + note.html;
 
     // Handle internal links
     elements.noteBody.querySelectorAll('.internal-link').forEach(link => {
@@ -499,6 +501,75 @@ function renderBreadcrumb(note) {
     breadcrumbs.push(`<span class="breadcrumb-item breadcrumb-current">${escapeHtml(note.title)}</span>`);
 
     return `<div class="breadcrumb">${breadcrumbs.join('')}</div>`;
+}
+
+// Render frontmatter properties
+function renderProperties(frontmatter) {
+    if (!frontmatter || Object.keys(frontmatter).length === 0) {
+        return '';
+    }
+
+    // Icon map for common property names
+    const iconMap = {
+        title: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>`,
+        source: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
+        topic: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>`,
+        tags: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>`,
+        created: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
+        date: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
+        'video link': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>`,
+        link: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`,
+        url: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`,
+        default: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>`
+    };
+
+    const properties = [];
+
+    for (const [key, value] of Object.entries(frontmatter)) {
+        if (value === null || value === undefined || value === '') continue;
+
+        const icon = iconMap[key.toLowerCase()] || iconMap.default;
+        let valueHtml;
+
+        if (key.toLowerCase() === 'tags') {
+            // Handle tags as array or string
+            const tagsArray = Array.isArray(value) ? value : [value];
+            valueHtml = `<div class="note-property-tags">${tagsArray.map(tag => 
+                `<span class="note-property-tag">#${escapeHtml(String(tag))}</span>`
+            ).join('')}</div>`;
+        } else if (typeof value === 'string' && (value.startsWith('http://') || value.startsWith('https://'))) {
+            // Handle URLs
+            valueHtml = `<a href="${escapeHtml(value)}" target="_blank" rel="noopener noreferrer">${escapeHtml(value)}</a>`;
+        } else if (Array.isArray(value)) {
+            // Handle arrays (other than tags)
+            valueHtml = escapeHtml(value.join(', '));
+        } else if (typeof value === 'object' && value instanceof Date) {
+            // Handle Date objects
+            valueHtml = escapeHtml(value.toLocaleDateString());
+        } else {
+            // Handle other values
+            valueHtml = escapeHtml(String(value));
+        }
+
+        properties.push(`
+            <div class="note-property">
+                <span class="note-property-icon">${icon}</span>
+                <span class="note-property-name">${escapeHtml(key)}</span>
+                <span class="note-property-value">${valueHtml}</span>
+            </div>
+        `);
+    }
+
+    if (properties.length === 0) return '';
+
+    return `
+        <div class="note-properties">
+            <div class="note-properties-title">Properties</div>
+            <div class="note-properties-list">
+                ${properties.join('')}
+            </div>
+        </div>
+    `;
 }
 
 // Record note view for analytics

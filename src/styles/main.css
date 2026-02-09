@@ -593,6 +593,83 @@ body {
   color: var(--text-muted);
 }
 
+/* Note Properties (Frontmatter) */
+.note-properties {
+  margin: 16px 0 24px;
+  padding: 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+.note-properties-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.note-properties-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.note-property {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 0.9rem;
+}
+
+.note-property-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.note-property-name {
+  min-width: 80px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.note-property-value {
+  color: var(--text-primary);
+  flex: 1;
+  word-break: break-word;
+}
+
+.note-property-value a {
+  color: var(--link-color);
+  text-decoration: none;
+}
+
+.note-property-value a:hover {
+  color: var(--link-hover);
+  text-decoration: underline;
+}
+
+.note-property-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.note-property-tag {
+  display: inline-block;
+  background: var(--accent-muted);
+  color: var(--accent);
+  padding: 2px 8px;
+  border-radius: 100px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
 /* Note Body Typography */
 .note-body {
   font-size: 1rem;
