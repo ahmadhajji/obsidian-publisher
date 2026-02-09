@@ -150,8 +150,11 @@ function handleInitialRoute() {
     const noteMatch = path.match(/^\/notes\/(.+)$/);
     if (noteMatch) {
         const noteId = noteMatch[1];
-        const note = state.notes.find(n => n.id === noteId);
+        const note = state.notes.find(n => n.id === noteId || n.legacyId === noteId);
         if (note) {
+            if (note.id !== noteId) {
+                window.history.replaceState({}, '', `/notes/${note.id}`);
+            }
             if (window.tabsManager) {
                 window.tabsManager.openTab(note);
             } else {
@@ -164,7 +167,7 @@ function handleInitialRoute() {
     // Check for hash-based routing (legacy)
     if (window.location.hash) {
         const noteId = window.location.hash.slice(1);
-        const note = state.notes.find(n => n.id === noteId);
+        const note = state.notes.find(n => n.id === noteId || n.legacyId === noteId);
         if (note) {
             if (window.tabsManager) {
                 window.tabsManager.openTab(note);
@@ -705,10 +708,11 @@ function setupEventListeners() {
     // Before unload - send final time update
     window.addEventListener('beforeunload', () => {
         if (state.currentViewId && timeSpent > 0) {
-            navigator.sendBeacon('/api/analytics/time', JSON.stringify({
+            const payload = new Blob([JSON.stringify({
                 viewId: state.currentViewId,
                 seconds: timeSpent
-            }));
+            })], { type: 'application/json' });
+            navigator.sendBeacon('/api/analytics/time', payload);
         }
     });
 }

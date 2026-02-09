@@ -24,7 +24,9 @@ A live server that automatically syncs your Obsidian notes from Google Drive and
    - Go to APIs & Services → Credentials
    - Create Credentials → OAuth client ID
    - Application type: **Web application**
-   - Add authorized redirect URI: `http://localhost:3001/callback`
+   - Add authorized redirect URIs:
+     - `http://localhost:3000/auth/google/callback` (app login)
+     - `http://localhost:3001/callback` (setup script)
    - Save your **Client ID** and **Client Secret**
 
 ### 2. Get Your Google Drive Folder ID
@@ -55,7 +57,7 @@ SITE_NAME=OME Medicine Notes
 
 ### 4. Get Refresh Token
 
-Edit `setup-auth.js` and add your Client ID and Secret, then:
+Make sure your `.env` contains `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`, then run:
 ```bash
 npm install
 npm run setup
@@ -118,6 +120,8 @@ In Render dashboard → Your service → Settings → Custom Domains
 | `GOOGLE_REFRESH_TOKEN` | Generated via setup script |
 | `GOOGLE_DRIVE_FOLDER_ID` | ID of your notes folder |
 | `ATTACHMENTS_FOLDER_ID` | Google Drive folder ID for your attachments/images |
+| `CORS_ORIGIN` | Comma-separated allowlist for cross-origin requests |
+| `DRIVE_FETCH_CONCURRENCY` | Parallel fetch count for Drive note loading (default: 6) |
 | `SITE_NAME` | Title shown in header |
 | `PORT` | Server port (default: 3000) |
 
@@ -127,7 +131,7 @@ In Render dashboard → Your service → Settings → Custom Domains
 |----------|-------------|
 | `GET /api/notes` | Get all notes with folder tree |
 | `GET /api/search` | Get search index |
-| `POST /api/refresh` | Clear cache and refresh notes |
+| `POST /api/refresh` | Clear cache and refresh notes (admin only) |
 | `GET /api/attachment/:name` | Get image/file from attachments |
 | `GET /api/health` | Health check |
 

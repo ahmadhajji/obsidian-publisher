@@ -37,7 +37,7 @@ async function main() {
 ║   3. Enable "Google Drive API"                                         ║
 ║   4. Create OAuth credentials (Web application)                        ║
 ║   5. Add http://localhost:3001/callback as authorized redirect URI     ║
-║   6. Copy Client ID and Secret into this script                        ║
+║   6. Put GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET in your .env file       ║
 ║                                                                        ║
 ╚════════════════════════════════════════════════════════════════════════╝
   `);

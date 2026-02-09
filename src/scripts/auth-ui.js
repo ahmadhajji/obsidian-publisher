@@ -73,9 +73,9 @@ class AuthUI {
         if (this.user) {
             // Show avatar or initial
             if (this.user.avatarUrl) {
-                userBtn.innerHTML = `<img class="user-avatar-img" src="${this.user.avatarUrl}" alt="${this.user.displayName}" referrerpolicy="no-referrer">`;
+                userBtn.innerHTML = `<img class="user-avatar-img" src="${this.escapeAttribute(this.user.avatarUrl)}" alt="${this.escapeAttribute(this.user.displayName)}" referrerpolicy="no-referrer">`;
             } else {
-                userBtn.innerHTML = `<span class="user-avatar">${this.user.displayName.charAt(0).toUpperCase()}</span>`;
+                userBtn.innerHTML = `<span class="user-avatar">${this.escapeHtml(this.user.displayName.charAt(0).toUpperCase())}</span>`;
             }
             userBtn.title = this.user.displayName;
 
@@ -357,7 +357,7 @@ class AuthUI {
                 content.innerHTML = this.renderFeedbackList(data.feedback);
             }
         } catch (error) {
-            content.innerHTML = `<p class="error">Failed to load: ${error.message}</p>`;
+            content.innerHTML = `<p class="error">Failed to load: ${this.escapeHtml(error.message)}</p>`;
         }
     }
 
@@ -378,12 +378,12 @@ class AuthUI {
                     ${users.map(u => `
                         <tr class="${u.is_blocked ? 'blocked' : ''}">
                             <td>
-                                ${u.avatar_url ? `<img src="${u.avatar_url}" class="admin-avatar" referrerpolicy="no-referrer">` : ''}
-                                ${u.display_name || 'Unknown'}
+                                ${u.avatar_url ? `<img src="${this.escapeAttribute(u.avatar_url)}" class="admin-avatar" referrerpolicy="no-referrer">` : ''}
+                                ${this.escapeHtml(u.display_name || 'Unknown')}
                             </td>
-                            <td>${u.email}</td>
+                            <td>${this.escapeHtml(u.email)}</td>
                             <td>
-                                <select class="role-select" data-user-id="${u.id}" ${u.id === this.user?.id ? 'disabled' : ''}>
+                                <select class="role-select" data-user-id="${this.escapeAttribute(u.id)}" ${u.id === this.user?.id ? 'disabled' : ''}>
                                     <option value="member" ${u.role === 'member' ? 'selected' : ''}>Member</option>
                                     <option value="moderator" ${u.role === 'moderator' ? 'selected' : ''}>Moderator</option>
                                     <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
@@ -392,8 +392,8 @@ class AuthUI {
                             </td>
                             <td>
                                 ${u.is_blocked 
-                                    ? `<button class="btn-secondary btn-sm" onclick="authUI.unblockUser('${u.id}')">Unblock</button>`
-                                    : (u.id !== this.user?.id ? `<button class="btn-secondary btn-sm danger" onclick="authUI.blockUserAction('${u.id}')">Block</button>` : '')
+                                    ? `<button class="btn-secondary btn-sm" onclick="authUI.unblockUser('${this.escapeJsString(u.id)}')">Unblock</button>`
+                                    : (u.id !== this.user?.id ? `<button class="btn-secondary btn-sm danger" onclick="authUI.blockUserAction('${this.escapeJsString(u.id)}')">Block</button>` : '')
                                 }
                             </td>
                         </tr>
@@ -411,16 +411,30 @@ class AuthUI {
                 ${feedback.map(f => `
                     <div class="feedback-item ${f.is_read ? 'read' : 'unread'}">
                         <div class="feedback-header">
-                            <span class="feedback-type">${f.type}</span>
-                            <span class="feedback-email">${f.email || 'Anonymous'}</span>
+                            <span class="feedback-type">${this.escapeHtml(f.type)}</span>
+                            <span class="feedback-email">${this.escapeHtml(f.email || 'Anonymous')}</span>
                             <span class="feedback-date">${new Date(f.created_at).toLocaleDateString()}</span>
                         </div>
-                        <div class="feedback-message">${f.message}</div>
-                        ${!f.is_read ? `<button class="btn-secondary btn-sm" onclick="authUI.markFeedbackRead('${f.id}')">Mark Read</button>` : ''}
+                        <div class="feedback-message">${this.escapeHtml(f.message)}</div>
+                        ${!f.is_read ? `<button class="btn-secondary btn-sm" onclick="authUI.markFeedbackRead('${this.escapeJsString(f.id)}')">Mark Read</button>` : ''}
                     </div>
                 `).join('')}
             </div>
         `;
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text || '';
+        return div.innerHTML;
+    }
+
+    escapeAttribute(text) {
+        return this.escapeHtml(text).replace(/`/g, '&#96;');
+    }
+
+    escapeJsString(text) {
+        return String(text || '').replace(/\\/g, '\\\\').replace(/'/g, '\\\'');
     }
 
     async blockUserAction(userId) {

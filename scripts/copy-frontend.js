@@ -7,6 +7,7 @@ const path = require('path');
 
 const srcDir = path.join(__dirname, '..', 'src');
 const distDir = path.join(__dirname, '..', 'dist');
+const staticDir = path.join(srcDir, 'static');
 
 // Create dist directories
 fs.mkdirSync(path.join(distDir, 'styles'), { recursive: true });
@@ -49,6 +50,16 @@ for (const jsFile of jsFiles) {
         path.join(srcDir, 'scripts', jsFile),
         path.join(distDir, 'scripts', jsFile)
     );
+}
+
+// Copy static assets (manifest, service worker, icons, etc.)
+if (fs.existsSync(staticDir)) {
+    for (const file of fs.readdirSync(staticDir)) {
+        fs.copyFileSync(
+            path.join(staticDir, file),
+            path.join(distDir, file)
+        );
+    }
 }
 
 console.log('✅ Frontend files copied to dist/');

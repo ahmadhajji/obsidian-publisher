@@ -143,11 +143,12 @@ class AnalyticsDashboard {
         const allNotes = window.obsidianPublisher?.state?.notes || [];
 
         return notes.map((n, i) => {
-            const note = allNotes.find(no => no.id === n.note_id);
+            const note = allNotes.find(no => no.id === n.note_id || no.legacyId === n.note_id);
             const title = note?.title || n.note_id;
+            const targetNoteId = note?.id || n.note_id;
 
             return `
-                <div class="top-note-item" data-note-id="${n.note_id}">
+                <div class="top-note-item" data-note-id="${targetNoteId}">
                     <span class="top-note-rank">${i + 1}</span>
                     <span class="top-note-title">${this.escapeHtml(title)}</span>
                     <span class="top-note-views">${n.view_count} views</span>
@@ -255,13 +256,13 @@ class HistoryPanel {
         }
 
         body.innerHTML = history.map(h => {
-            const note = allNotes.find(n => n.id === h.note_id);
+            const note = allNotes.find(n => n.id === h.note_id || n.legacyId === h.note_id);
             if (!note) return '';
 
             const progress = Math.round(h.scroll_position * 100);
 
             return `
-                <div class="history-item" data-note-id="${h.note_id}">
+                <div class="history-item" data-note-id="${note.id}">
                     <div class="history-item-title">${this.escapeHtml(note.title)}</div>
                     <div class="history-item-meta">
                         <span class="history-date">${this.formatDate(h.last_read_at)}</span>
@@ -284,7 +285,7 @@ class HistoryPanel {
         body.querySelectorAll('.history-item').forEach(item => {
             item.addEventListener('click', () => {
                 const noteId = item.dataset.noteId;
-                const note = allNotes.find(n => n.id === noteId);
+                const note = allNotes.find(n => n.id === noteId || n.legacyId === noteId);
                 if (note) {
                     this.hide();
                     window.tabsManager.openTab(note);
