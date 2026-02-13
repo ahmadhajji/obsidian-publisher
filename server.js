@@ -43,9 +43,20 @@ const { statements } = require('./lib/db');
 
 const SESSION_COOKIE_MAX_AGE = 365 * 24 * 60 * 60 * 1000;
 const JSON_BODY_LIMIT = '250kb';
+const DESIGN_CONCEPTS = new Set(['concept-01', 'concept-02', 'concept-03', 'concept-04', 'concept-05']);
 
 function isProduction() {
     return process.env.NODE_ENV === 'production';
+}
+
+function isDesignPreviewEnabled() {
+    return !isProduction() && process.env.DESIGN_PREVIEW === '1';
+}
+
+function normalizeDesignConcept(value) {
+    if (typeof value !== 'string') return null;
+    const normalized = value.trim().toLowerCase();
+    return DESIGN_CONCEPTS.has(normalized) ? normalized : null;
 }
 
 function toInt(value, fallback) {
@@ -217,6 +228,11 @@ function createApp() {
 
     app.use('/api/auth', createInMemoryRateLimiter({ windowMs: 10 * 60 * 1000, max: 120, keyPrefix: 'api-auth' }));
     app.use('/api/feedback', createInMemoryRateLimiter({ windowMs: 10 * 60 * 1000, max: 20, keyPrefix: 'api-feedback' }));
+
+    if (isDesignPreviewEnabled()) {
+        const redesignsDir = path.join(__dirname, 'redesigns');
+        app.use('/redesigns', express.static(redesignsDir));
+    }
 
     // Serve static files from dist folder
     app.use(express.static(path.join(__dirname, 'dist')));
@@ -704,6 +720,36 @@ function createApp() {
     app.get('/api/health', (req, res) => {
         res.json({ status: 'ok', timestamp: new Date().toISOString() });
     });
+
+    // ===========================================
+    // LOCAL DESIGN PREVIEW ROUTES
+    // ===========================================
+    if (isDesignPreviewEnabled()) {
+        const redesignsDir = path.join(__dirname, 'redesigns');
+        const selectorFile = path.join(redesignsDir, 'index.html');
+
+        const sendConcept = (req, res) => {
+            const concept = normalizeDesignConcept(req.params.concept);
+            if (!concept) {
+                return res.status(404).send('Design concept not found');
+            }
+
+            return res.sendFile(path.join(redesignsDir, concept, 'index.html'));
+        };
+
+        app.get('/__design', (req, res) => {
+            res.sendFile(selectorFile);
+        });
+        app.get('/__design/:concept', sendConcept);
+        app.get('/__design/:concept/notes/:noteId', sendConcept);
+    } else {
+        app.get('/__design', (req, res) => {
+            res.status(404).send('Design preview is disabled');
+        });
+        app.get('/__design/*', (req, res) => {
+            res.status(404).send('Design preview is disabled');
+        });
+    }
 
     app.get('/about', (req, res) => {
         res.sendFile(path.join(__dirname, 'dist', 'about.html'));

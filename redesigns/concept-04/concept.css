@@ -1,0 +1,364 @@
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Space+Mono:wght@400;700&display=swap');
+
+.concept-04 {
+  --bg-primary: #f5f5f5;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #efefef;
+  --bg-hover: #e8e8e8;
+  --bg-active: #dcdcdc;
+  --text-primary: #101010;
+  --text-secondary: #1f1f1f;
+  --text-muted: #4a4a4a;
+  --accent: #000000;
+  --accent-hover: #000000;
+  --accent-muted: rgba(0, 0, 0, 0.08);
+  --border-color: #000000;
+  --success: #097d31;
+  --warning: #b45309;
+  --error: #b91c1c;
+  --font-heading: 'Archivo', Impact, sans-serif;
+  --font-sans: 'Space Mono', monospace;
+  --font-mono: 'Space Mono', monospace;
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  background: #f4f4f4;
+  color: #0d0d0d;
+}
+
+.concept-04 .skip-link {
+  position: absolute;
+  left: -999px;
+}
+
+.concept-04 .skip-link:focus {
+  left: 10px;
+  top: 10px;
+  padding: 8px 10px;
+  background: #000;
+  color: #fff;
+  z-index: 500;
+}
+
+.concept-04 .design-preview-badge {
+  position: fixed;
+  right: 0;
+  top: 0;
+  margin: 0;
+  z-index: 250;
+  padding: 8px 10px;
+  background: #ffeb3b;
+  color: #000;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  border-left: 2px solid #000;
+  border-bottom: 2px solid #000;
+}
+
+.concept-04 .header {
+  background: #fff;
+  border-bottom: 3px solid #000;
+  height: 64px;
+  padding-inline: 14px;
+}
+
+.concept-04 .site-title {
+  font-family: var(--font-heading);
+  letter-spacing: 0.06em;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+}
+
+.concept-04 .site-title::after {
+  content: 'BETA';
+  background: #ffeb3b;
+  color: #000;
+  border: 1px solid #000;
+  border-radius: 0;
+}
+
+.concept-04 .search-input {
+  border: 2px solid #000;
+  background: #fff;
+  border-radius: 0;
+  font-family: var(--font-sans);
+}
+
+.concept-04 .main-layout {
+  margin-top: 64px;
+  height: calc(100vh - 64px);
+  display: grid;
+  grid-template-columns: 1fr 320px;
+}
+
+.concept-04 .main-content {
+  order: 1;
+  border-right: 2px solid #000;
+}
+
+.concept-04 .sidebar {
+  order: 2;
+  width: auto;
+  min-width: 0;
+  border-right: none;
+  border-left: 2px solid #000;
+  background: #fff;
+}
+
+.concept-04 .sidebar-header {
+  border-bottom: 2px solid #000;
+}
+
+.concept-04 .sidebar-title {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  color: #111;
+}
+
+.concept-04 .tree-note,
+.concept-04 .tree-folder-header {
+  padding: 8px 10px;
+  border-bottom: 1px dashed #000;
+}
+
+.concept-04 .tree-note.active {
+  background: #000;
+  color: #fff;
+}
+
+.concept-04 .tree-note:hover,
+.concept-04 .tree-folder-header:hover {
+  background: #ffeb3b;
+}
+
+.concept-04 .content {
+  background: #fff;
+}
+
+.concept-04 .tabs-bar {
+  border-bottom: 2px solid #000;
+  height: 40px;
+  background: #fff;
+}
+
+.concept-04 .tab {
+  border: 2px solid transparent;
+  border-bottom: none;
+  border-radius: 0;
+  text-transform: uppercase;
+  font-size: 0.73rem;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+}
+
+.concept-04 .tab.active {
+  border-color: #000;
+  background: #ffeb3b;
+  color: #000;
+}
+
+.concept-04 .new-tab-btn,
+.concept-04 .toolbar-btn,
+.concept-04 .sidebar-toggle,
+.concept-04 .select-mode-btn,
+.concept-04 .modal-close,
+.concept-04 .settings-option,
+.concept-04 .welcome-action,
+.concept-04 .welcome-popup-btn,
+.concept-04 .nav-btn,
+.concept-04 .export-option,
+.concept-04 .btn-primary,
+.concept-04 .btn-secondary {
+  border-radius: 0;
+  border: 2px solid #000;
+  background: #fff;
+  color: #000;
+}
+
+.concept-04 .toolbar-btn:hover,
+.concept-04 .sidebar-toggle:hover,
+.concept-04 .select-mode-btn:hover,
+.concept-04 .new-tab-btn:hover,
+.concept-04 .nav-btn:hover:not(:disabled),
+.concept-04 .welcome-action:hover,
+.concept-04 .export-option:hover {
+  background: #ffeb3b;
+  color: #000;
+}
+
+.concept-04 .welcome-screen {
+  align-items: flex-start;
+  text-align: left;
+  border: 2px solid #000;
+  padding: 22px;
+  min-height: 40vh;
+  background: repeating-linear-gradient(
+    -45deg,
+    #fff,
+    #fff 14px,
+    #f6f6f6 14px,
+    #f6f6f6 28px
+  );
+}
+
+.concept-04 .welcome-badge {
+  display: inline-block;
+  background: #000;
+  color: #fff;
+  padding: 4px 8px;
+  font-size: 0.76rem;
+  letter-spacing: 0.08em;
+}
+
+.concept-04 .welcome-screen h2 {
+  font-family: var(--font-heading);
+  text-transform: uppercase;
+  font-size: clamp(1.6rem, 4vw, 2.2rem);
+  line-height: 1.1;
+  margin-top: 10px;
+  color: #000;
+}
+
+.concept-04 .welcome-feature {
+  margin-top: 8px;
+  border-left: 4px solid #000;
+  padding-left: 10px;
+}
+
+.concept-04 .note-header {
+  border-bottom: 2px solid #000;
+  padding-bottom: 14px;
+  margin-bottom: 18px;
+}
+
+.concept-04 .note-title {
+  font-family: var(--font-heading);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+}
+
+.concept-04 .note-body {
+  font-size: 0.98rem;
+  line-height: 1.6;
+  max-width: 86ch;
+}
+
+.concept-04 .note-body h1,
+.concept-04 .note-body h2,
+.concept-04 .note-body h3,
+.concept-04 .note-body h4 {
+  font-family: var(--font-heading);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.concept-04 .loading-overlay {
+  background: #fff;
+  gap: 10px;
+}
+
+.concept-04 .loading-skeleton {
+  width: min(560px, 78%);
+  display: grid;
+  gap: 8px;
+}
+
+.concept-04 .skeleton-line {
+  height: 10px;
+  background: #000;
+  opacity: 0.08;
+  animation: concept04-blink 1s steps(2, jump-none) infinite;
+}
+
+.concept-04 .skeleton-line.w-40 { width: 40%; }
+.concept-04 .skeleton-line.w-60 { width: 60%; }
+.concept-04 .skeleton-line.w-70 { width: 70%; }
+.concept-04 .skeleton-line.w-90 { width: 90%; }
+
+@keyframes concept04-blink {
+  0%, 100% { opacity: 0.1; }
+  50% { opacity: 0.2; }
+}
+
+.concept-04 .modal-overlay,
+.concept-04 .auth-modal,
+.concept-04 .analytics-dashboard,
+.concept-04 .history-panel {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.concept-04 .modal,
+.concept-04 .typography-panel,
+.concept-04 .auth-modal-content,
+.concept-04 .user-dropdown,
+.concept-04 .analytics-content,
+.concept-04 .history-content {
+  border: 2px solid #000;
+  background: #fff;
+  border-radius: 0;
+}
+
+.concept-04 .toolbar-btn.copied {
+  background: #0ea35f;
+  color: #fff;
+}
+
+.concept-04 textarea:invalid,
+.concept-04 input:invalid {
+  border-color: #b91c1c;
+  background: #fff3f3;
+}
+
+.concept-04 .search-no-results,
+.concept-04 .no-comments,
+.concept-04 .no-data,
+.concept-04 .no-history,
+.concept-04 .analytics-error,
+.concept-04 .history-error {
+  border: 2px solid #000;
+  padding: 10px;
+  background: #fff;
+  color: #111;
+}
+
+.concept-04 :focus-visible {
+  outline: 3px solid #ffeb3b;
+  outline-offset: 2px;
+}
+
+@media (max-width: 980px) {
+  .concept-04 .main-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .concept-04 .main-content {
+    order: 2;
+    border-right: none;
+  }
+
+  .concept-04 .sidebar {
+    order: 1;
+    top: 64px;
+    left: 0;
+    width: min(88vw, 320px);
+    transform: translateX(-102%);
+    border-left: none;
+    border-right: 2px solid #000;
+    z-index: 130;
+  }
+
+  .concept-04 .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .concept-04 .content-inner {
+    padding: 18px 14px 24px;
+  }
+}

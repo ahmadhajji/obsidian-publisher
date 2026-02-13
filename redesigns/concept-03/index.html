@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-design-concept="concept-03">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Clinical Vault redesign preview: Concept 03 · Midnight Command">
+  <title>Clinical Vault · Concept 03 · Midnight Command</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" href="/icon.svg">
+  <link rel="stylesheet" href="/styles/main.css">
+  <link rel="stylesheet" href="/redesigns/concept-03/concept.css">
+</head>
+
+<body class="design-preview concept-03">
+  <a class="skip-link" href="#contentArea">Skip to content</a>
+  <p class="design-preview-badge" role="status" aria-live="polite">Local Design Preview · Concept 03 · Midnight Command</p>
+
+  <header class="header" role="banner">
+    <div class="header-left">
+      <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 12h18M3 6h18M3 18h18" />
+        </svg>
+      </button>
+      <h1 class="site-title" id="siteTitle">Clinical Vault</h1>
+    </div>
+
+    <div class="header-center">
+      <label class="search-container" for="searchInput">
+        <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8" />
+          <path d="m21 21-4.35-4.35" />
+        </svg>
+        <input type="text" class="search-input" id="searchInput" placeholder="Search notes... (⌘K)" autocomplete="off">
+        <div class="search-results" id="searchResults" role="listbox" aria-label="Search results"></div>
+      </label>
+    </div>
+
+    <div class="header-right toolbar" role="toolbar" aria-label="Workspace tools">
+      <button class="icon-btn toolbar-btn" id="settingsBtn" aria-label="Settings" title="Settings">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1v.17a2 2 0 1 1-4 0V21a1.65 1.65 0 0 0-.33-1 1.65 1.65 0 0 0-1-.6 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1-.33h-.17a2 2 0 1 1 0-4H3a1.65 1.65 0 0 0 1-.33 1.65 1.65 0 0 0 .6-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6c.38 0 .74-.13 1-.37.26-.24.43-.58.47-.93V3a2 2 0 1 1 4 0v.3c.04.35.21.69.47.93.26.24.62.37 1 .37.45 0 .88-.18 1.2-.5l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06c-.32.32-.5.75-.5 1.2 0 .38.13.74.37 1 .24.26.58.43.93.47H21a2 2 0 1 1 0 4h-.3c-.35.04-.69.21-.93.47-.24.26-.37.62-.37 1z" />
+        </svg>
+      </button>
+      <button class="icon-btn toolbar-btn" id="exportBtn" aria-label="Export" title="Export selected notes">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="7 10 12 15 17 10" />
+          <line x1="12" y1="15" x2="12" y2="3" />
+        </svg>
+      </button>
+      <button class="icon-btn toolbar-btn" id="themeToggle" aria-label="Toggle theme" title="Toggle theme">
+        <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="5" />
+          <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+        </svg>
+        <svg class="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="main-layout">
+    <aside class="sidebar" id="sidebar" aria-label="Notes tree">
+      <div class="sidebar-header">
+        <span class="sidebar-title">Knowledge Map</span>
+        <button class="select-mode-btn" id="selectModeBtn" title="Select notes for export" aria-label="Select notes for export">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 11 12 14 22 4" />
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+          </svg>
+        </button>
+      </div>
+      <nav class="file-tree" id="fileTree" aria-label="Note list"></nav>
+    </aside>
+
+    <main class="main-content" role="main">
+      <div id="tabsBar" class="tabs-bar"></div>
+
+      <section class="content" id="contentArea" tabindex="-1">
+        <div class="content-inner">
+          <section class="welcome-screen" id="welcomeScreen" aria-label="Empty workspace state">
+            <span class="welcome-badge">Concept 03 · Midnight Command</span>
+            <h2>Review notes with a fresh visual system</h2>
+            <p class="welcome-subtitle">A premium dark command center emphasizing focus, signal density, and high-contrast decision support.</p>
+            <div class="welcome-quick-actions" aria-label="Quick actions">
+              <a class="welcome-action" href="/about">See platform capabilities</a>
+              <a class="welcome-action welcome-action-secondary" href="/feedback">Send product feedback</a>
+            </div>
+            <div class="welcome-features">
+              <div class="welcome-feature"><span>Fast full-text search across notes</span></div>
+              <div class="welcome-feature"><span>Wiki links and embedded note references</span></div>
+              <div class="welcome-feature"><span>Auth, comments, analytics, and export preserved</span></div>
+            </div>
+            <p class="welcome-hint">Choose any note in the sidebar to start.</p>
+          </section>
+
+          <article class="note-content" id="noteContent" style="display: none;">
+            <header class="note-header">
+              <h1 class="note-title" id="noteTitle"></h1>
+              <div class="note-meta" id="noteMeta"></div>
+            </header>
+            <div class="note-body" id="noteBody"></div>
+          </article>
+        </div>
+
+        <div class="loading-overlay" id="loadingOverlay" role="status" aria-live="polite">
+          <div class="loading-skeleton" aria-hidden="true">
+            <div class="skeleton-line w-40"></div>
+            <div class="skeleton-line w-70"></div>
+            <div class="skeleton-line w-90"></div>
+            <div class="skeleton-line w-60"></div>
+          </div>
+          <p>Loading notes and workspace data...</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-overlay" id="exportModal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="exportDialogTitle">
+      <div class="modal-header">
+        <h3 id="exportDialogTitle">Export Notes</h3>
+        <button class="modal-close" id="closeModal" aria-label="Close export dialog">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="selected-count" id="selectedCount">0 notes selected</p>
+        <div class="export-options">
+          <button class="export-option" id="exportMd">
+            <span>Download Markdown</span>
+            <small>Original source files</small>
+          </button>
+          <button class="export-option" id="exportPdf">
+            <span>Download PDF</span>
+            <small>Formatted reading version</small>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="settingsModal" aria-hidden="true">
+    <div class="modal settings-modal" role="dialog" aria-modal="true" aria-labelledby="settingsDialogTitle">
+      <div class="modal-header">
+        <h3 id="settingsDialogTitle">Reading Settings</h3>
+        <button class="modal-close" id="closeSettingsModal" aria-label="Close settings">×</button>
+      </div>
+      <div class="modal-body settings-body">
+        <div class="settings-group">
+          <label class="settings-label">Theme</label>
+          <div class="settings-options">
+            <button class="settings-option" data-theme="light">Light</button>
+            <button class="settings-option" data-theme="dark">Dark</button>
+          </div>
+        </div>
+        <div class="settings-group">
+          <label class="settings-label" for="fontSizeSlider">Note Font Size</label>
+          <div class="settings-slider">
+            <input type="range" id="fontSizeSlider" min="14" max="22" value="16" step="1">
+            <span id="fontSizeValue">16px</span>
+          </div>
+        </div>
+        <div class="settings-group">
+          <label class="settings-label" for="sidebarCollapsedToggle">Sidebar</label>
+          <div class="settings-toggle">
+            <label class="toggle-switch">
+              <input type="checkbox" id="sidebarCollapsedToggle">
+              <span class="toggle-slider"></span>
+            </label>
+            <span>Collapse sidebar by default</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay welcome-popup-overlay" id="welcomePopup">
+    <div class="modal welcome-popup" role="dialog" aria-modal="true" aria-labelledby="welcomePopupTitle">
+      <div class="welcome-popup-header">
+        <h2 id="welcomePopupTitle">Welcome back</h2>
+        <p>Use this preview to evaluate a new information hierarchy.</p>
+      </div>
+      <div class="welcome-popup-features">
+        <div class="popup-feature"><div class="popup-feature-text"><strong>Loading</strong><span>Structured skeleton + progressive reveal</span></div></div>
+        <div class="popup-feature"><div class="popup-feature-text"><strong>Empty</strong><span>Clear zero-state guidance in workspace</span></div></div>
+        <div class="popup-feature"><div class="popup-feature-text"><strong>Validation</strong><span>Accessible focus and form feedback states</span></div></div>
+      </div>
+      <button class="welcome-popup-btn" id="dismissWelcome">Start preview</button>
+    </div>
+  </div>
+
+  <script src="/redesigns/shared/design-preview.js"></script>
+  <script src="/scripts/app.js"></script>
+  <script src="/scripts/search.js"></script>
+  <script src="/scripts/export.js"></script>
+  <script src="/scripts/settings.js"></script>
+  <script src="/scripts/tabs.js"></script>
+  <script src="/scripts/typography.js"></script>
+  <script src="/scripts/auth-ui.js"></script>
+  <script src="/scripts/comments-ui.js"></script>
+  <script src="/scripts/analytics-dashboard.js"></script>
+</body>
+
+</html>
