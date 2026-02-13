@@ -11,7 +11,7 @@
         "dev": "node server.js",
         "dev:design": "DESIGN_PREVIEW=1 node server.js",
         "build": "node scripts/copy-frontend.js",
-        "test": "node --test --test-concurrency=1 tests/**/*.test.js",
+        "test": "node --test --test-concurrency=1 tests/*.test.js",
         "verify": "npm run test && npm run build",
         "postinstall": "npm run build",
         "setup": "node setup-auth.js"
