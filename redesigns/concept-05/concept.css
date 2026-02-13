@@ -1,0 +1,371 @@
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap');
+
+.concept-05 {
+  --bg-primary: #f6faf8;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f1f6f4;
+  --bg-hover: #e8f2ee;
+  --bg-active: #ddeae4;
+  --text-primary: #1d2b2a;
+  --text-secondary: #3e5854;
+  --text-muted: #6d817d;
+  --accent: #2f6f8f;
+  --accent-hover: #255a74;
+  --accent-muted: rgba(47, 111, 143, 0.13);
+  --border-color: #d4e3de;
+  --border-light: #c1d6d0;
+  --success: #157f66;
+  --warning: #9a6a10;
+  --error: #b93945;
+  --font-heading: 'Newsreader', Georgia, serif;
+  --font-sans: 'Public Sans', 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --shadow-sm: 0 4px 12px rgba(30, 68, 76, 0.08);
+  --shadow-md: 0 12px 26px rgba(30, 68, 76, 0.12);
+  --shadow-lg: 0 24px 48px rgba(30, 68, 76, 0.16);
+  background:
+    radial-gradient(circle at 7% 0%, rgba(47, 111, 143, 0.12), transparent 30%),
+    radial-gradient(circle at 94% 6%, rgba(33, 173, 140, 0.09), transparent 28%),
+    #f6faf8;
+}
+
+.concept-05 .skip-link {
+  position: absolute;
+  left: -999px;
+}
+
+.concept-05 .skip-link:focus {
+  left: 12px;
+  top: 10px;
+  z-index: 400;
+  background: var(--accent);
+  color: #fff;
+  padding: 9px 12px;
+  border-radius: 10px;
+}
+
+.concept-05 .design-preview-badge {
+  position: fixed;
+  left: 50%;
+  top: 12px;
+  transform: translateX(-50%);
+  z-index: 210;
+  margin: 0;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid #bdd2cb;
+  background: rgba(255, 255, 255, 0.9);
+  color: #2c5353;
+  font-size: 0.74rem;
+  letter-spacing: 0.03em;
+}
+
+.concept-05 .header {
+  height: 74px;
+  padding-inline: 20px;
+  border-bottom: 1px solid #d2e0db;
+  background: rgba(248, 252, 250, 0.9);
+  backdrop-filter: blur(10px);
+}
+
+.concept-05 .site-title {
+  font-family: var(--font-heading);
+  font-size: clamp(1.35rem, 2vw, 1.75rem);
+  font-weight: 700;
+}
+
+.concept-05 .site-title::after {
+  content: 'Care';
+  background: #d6ece8;
+  color: #2c5952;
+}
+
+.concept-05 .search-input {
+  border: 1px solid #c8dcd6;
+  border-radius: 12px;
+  background: #fff;
+  font-size: 0.95rem;
+}
+
+.concept-05 .main-layout {
+  margin-top: 74px;
+  height: calc(100vh - 74px);
+  gap: 16px;
+  padding: 0 16px 16px;
+}
+
+.concept-05 .sidebar {
+  border: 1px solid #cfe0db;
+  border-radius: 18px;
+  box-shadow: var(--shadow-sm);
+  background: #fff;
+  margin-top: 16px;
+  margin-bottom: 0;
+}
+
+.concept-05 .sidebar-header {
+  border-bottom: 1px solid #e0ece8;
+}
+
+.concept-05 .sidebar-title {
+  color: #446663;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.concept-05 .tree-note,
+.concept-05 .tree-folder-header {
+  border-radius: 10px;
+  margin: 4px 8px;
+}
+
+.concept-05 .tree-note.active {
+  background: #e5f1ef;
+  color: #285f68;
+  border: 1px solid #b9d5d0;
+}
+
+.concept-05 .main-content {
+  margin-top: 16px;
+}
+
+.concept-05 .tabs-bar {
+  background: #f7fbf9;
+  border: 1px solid #d4e5df;
+  border-radius: 14px;
+  height: 44px;
+  min-height: 44px;
+  margin-bottom: 10px;
+}
+
+.concept-05 .tab {
+  border-radius: 10px;
+}
+
+.concept-05 .tab.active {
+  border-bottom: none;
+  background: #fff;
+  border: 1px solid #c8ddd8;
+}
+
+.concept-05 .toolbar-btn,
+.concept-05 .sidebar-toggle,
+.concept-05 .select-mode-btn,
+.concept-05 .new-tab-btn,
+.concept-05 .nav-btn,
+.concept-05 .welcome-action,
+.concept-05 .modal-close,
+.concept-05 .settings-option,
+.concept-05 .export-option,
+.concept-05 .btn-primary,
+.concept-05 .btn-secondary,
+.concept-05 .welcome-popup-btn {
+  border-radius: 12px;
+}
+
+.concept-05 .toolbar-btn {
+  border: 1px solid #d6e6e1;
+  background: #fff;
+}
+
+.concept-05 .content {
+  border: 1px solid #d7e6e1;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+}
+
+.concept-05 .content-inner {
+  max-width: 1120px;
+  padding: 46px 64px 58px;
+}
+
+.concept-05 .welcome-screen {
+  min-height: 54vh;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.concept-05 .welcome-badge {
+  font-family: var(--font-mono);
+  font-size: 0.73rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #2f6f8f;
+}
+
+.concept-05 .welcome-screen h2 {
+  margin-top: 8px;
+  font-family: var(--font-heading);
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-weight: 700;
+  color: #203535;
+}
+
+.concept-05 .welcome-subtitle {
+  max-width: 66ch;
+  color: #3f5d5a;
+  line-height: 1.75;
+}
+
+.concept-05 .welcome-quick-actions {
+  display: flex;
+  gap: 10px;
+  margin-block: 16px;
+}
+
+.concept-05 .welcome-action {
+  border: 1px solid #bfd6d0;
+  text-decoration: none;
+  color: #2a5755;
+  background: #fafdfe;
+  padding: 10px 16px;
+}
+
+.concept-05 .welcome-feature {
+  border-top: 1px solid #dce9e4;
+  padding-top: 10px;
+  margin-top: 10px;
+  color: #4f6664;
+}
+
+.concept-05 .note-header {
+  border-bottom: 1px solid #d6e3df;
+  padding-bottom: 16px;
+  margin-bottom: 24px;
+}
+
+.concept-05 .note-title {
+  font-family: var(--font-heading);
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  color: #1d3233;
+}
+
+.concept-05 .note-body {
+  font-size: 1.07rem;
+  line-height: 1.86;
+  max-width: 78ch;
+}
+
+.concept-05 .note-body h1,
+.concept-05 .note-body h2,
+.concept-05 .note-body h3 {
+  font-family: var(--font-heading);
+}
+
+.concept-05 .note-properties,
+.concept-05 .embedded-note,
+.concept-05 .comment,
+.concept-05 .analytics-section,
+.concept-05 .stat-card {
+  border: 1px solid #d5e4df;
+  background: #fbfefd;
+}
+
+.concept-05 .loading-overlay {
+  background: rgba(247, 252, 250, 0.96);
+  gap: 14px;
+}
+
+.concept-05 .loading-skeleton {
+  width: min(560px, 76%);
+  display: grid;
+  gap: 10px;
+}
+
+.concept-05 .skeleton-line {
+  height: 11px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #d9e8e4, #edf6f3, #d9e8e4);
+  background-size: 220% 100%;
+  animation: concept05-flow 1.5s ease-in-out infinite;
+}
+
+.concept-05 .skeleton-line.w-40 { width: 38%; }
+.concept-05 .skeleton-line.w-60 { width: 58%; }
+.concept-05 .skeleton-line.w-70 { width: 70%; }
+.concept-05 .skeleton-line.w-90 { width: 90%; }
+
+@keyframes concept05-flow {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+.concept-05 .modal-overlay,
+.concept-05 .auth-modal,
+.concept-05 .analytics-dashboard,
+.concept-05 .history-panel {
+  background: rgba(31, 60, 70, 0.34);
+}
+
+.concept-05 .modal,
+.concept-05 .typography-panel,
+.concept-05 .auth-modal-content,
+.concept-05 .user-dropdown,
+.concept-05 .analytics-content,
+.concept-05 .history-content {
+  border: 1px solid #cfe1dc;
+  background: #fff;
+}
+
+.concept-05 .toolbar-btn.copied {
+  background: rgba(21, 127, 102, 0.15);
+  color: #157f66;
+}
+
+.concept-05 textarea:invalid,
+.concept-05 input:invalid {
+  border-color: #d05b66;
+  box-shadow: 0 0 0 3px rgba(208, 91, 102, 0.15);
+}
+
+.concept-05 .search-no-results,
+.concept-05 .no-comments,
+.concept-05 .no-data,
+.concept-05 .no-history,
+.concept-05 .analytics-error,
+.concept-05 .history-error {
+  border: 1px solid #d4e4df;
+  border-radius: 12px;
+  background: #f8fcfa;
+  padding: 12px;
+}
+
+.concept-05 :focus-visible {
+  outline: 2px solid #2f6f8f;
+  outline-offset: 2px;
+}
+
+@media (max-width: 1024px) {
+  .concept-05 .content-inner {
+    padding: 30px 22px 34px;
+  }
+}
+
+@media (max-width: 980px) {
+  .concept-05 .main-layout {
+    margin-top: 74px;
+    height: calc(100vh - 74px);
+    padding: 0 10px 10px;
+  }
+
+  .concept-05 .sidebar {
+    top: 74px;
+    left: 10px;
+    width: min(88vw, 330px);
+    transform: translateX(-110%);
+    z-index: 130;
+  }
+
+  .concept-05 .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .concept-05 .main-content,
+  .concept-05 .sidebar {
+    margin-top: 10px;
+  }
+}

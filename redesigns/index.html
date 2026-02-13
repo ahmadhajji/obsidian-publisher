@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clinical Vault Design Lab</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --border: #334155;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #06b6d4;
+      --accent2: #38bdf8;
+      --radius: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 15% 10%, rgba(34, 211, 238, 0.22), transparent 35%),
+        radial-gradient(circle at 90% 0%, rgba(56, 189, 248, 0.18), transparent 30%),
+        var(--bg);
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    main {
+      width: min(900px, 100%);
+      background: rgba(17, 24, 39, 0.9);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      backdrop-filter: blur(10px);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.6rem, 4vw, 2.2rem);
+      letter-spacing: 0.02em;
+    }
+
+    p {
+      color: var(--muted);
+      max-width: 64ch;
+      line-height: 1.65;
+      margin-top: 10px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      margin-top: 20px;
+    }
+
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .card {
+      border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border));
+      border-radius: 14px;
+      padding: 16px;
+      background: rgba(15, 23, 42, 0.8);
+      transition: transform 160ms ease, border-color 160ms ease;
+      min-height: 136px;
+    }
+
+    .card:hover,
+    .card:focus-visible {
+      transform: translateY(-2px);
+      border-color: var(--accent2);
+      outline: none;
+    }
+
+    .card h2 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .card p {
+      margin-top: 8px;
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+
+    .meta {
+      font-size: 0.9rem;
+      margin-top: 18px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <h1>Clinical Vault Design Lab</h1>
+    <p>
+      Local-only preview surface for five isolated redesign concepts. Main production routes remain unchanged.
+      Open any concept below.
+    </p>
+
+    <div class="grid" role="list" aria-label="Design concepts">
+      <a role="listitem" class="card" href="/__design/concept-01">
+        <h2>Concept 01</h2>
+        <p>Editorial, typography-forward, strong baseline grid.</p>
+      </a>
+      <a role="listitem" class="card" href="/__design/concept-02">
+        <h2>Concept 02</h2>
+        <p>Playful and rounded with soft depth and friendly interactions.</p>
+      </a>
+      <a role="listitem" class="card" href="/__design/concept-03">
+        <h2>Concept 03</h2>
+        <p>Premium dark productivity cockpit with luminous contrast.</p>
+      </a>
+      <a role="listitem" class="card" href="/__design/concept-04">
+        <h2>Concept 04</h2>
+        <p>Brutalist, dense, sharp-edged utility-first interface.</p>
+      </a>
+      <a role="listitem" class="card" href="/__design/concept-05">
+        <h2>Concept 05</h2>
+        <p>Calm, airy clinical workspace with high readability.</p>
+      </a>
+    </div>
+
+    <p class="meta">Enable with <code>DESIGN_PREVIEW=1</code> in local development.</p>
+  </main>
+</body>
+
+</html>

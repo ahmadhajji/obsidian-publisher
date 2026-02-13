@@ -146,14 +146,16 @@ function initializeV2Components() {
 function handleInitialRoute() {
     const path = window.location.pathname;
 
-    // Check for /notes/:noteId route
-    const noteMatch = path.match(/^\/notes\/(.+)$/);
+    // Check for note routes (supports both /notes/:id and nested preview routes)
+    const noteMatch = path.match(/^(.*)\/notes\/(.+)$/);
     if (noteMatch) {
-        const noteId = noteMatch[1];
+        const routePrefix = noteMatch[1] || '';
+        const noteId = noteMatch[2];
         const note = state.notes.find(n => n.id === noteId || n.legacyId === noteId);
         if (note) {
             if (note.id !== noteId) {
-                window.history.replaceState({}, '', `/notes/${note.id}`);
+                const base = routePrefix || '';
+                window.history.replaceState({}, '', `${base}/notes/${note.id}`);
             }
             if (window.tabsManager) {
                 window.tabsManager.openTab(note);
