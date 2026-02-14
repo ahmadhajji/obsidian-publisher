@@ -630,7 +630,8 @@ function stopTimeTracking() {
 function setupEventListeners() {
     // Theme toggle
     elements.themeToggle?.addEventListener('click', () => {
-        state.theme = state.theme === 'dark' ? 'light' : 'dark';
+        const currentTheme = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+        state.theme = currentTheme === 'dark' ? 'light' : 'dark';
         document.documentElement.dataset.theme = state.theme;
         localStorage.setItem('theme', state.theme);
     });
