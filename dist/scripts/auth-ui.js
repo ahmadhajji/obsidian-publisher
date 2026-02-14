@@ -69,18 +69,18 @@ class AuthUI {
     updateUI() {
         const userBtn = document.getElementById('userMenuBtn');
         const adminSection = document.getElementById('adminSection');
+        if (!userBtn) return;
 
         if (this.user) {
-            // Show avatar or initial
-            if (this.user.avatarUrl) {
-                userBtn.innerHTML = `<img class="user-avatar-img" src="${this.escapeAttribute(this.user.avatarUrl)}" alt="${this.escapeAttribute(this.user.displayName)}" referrerpolicy="no-referrer">`;
-            } else {
-                userBtn.innerHTML = `<span class="user-avatar">${this.escapeHtml(this.user.displayName.charAt(0).toUpperCase())}</span>`;
-            }
-            userBtn.title = this.user.displayName;
+            const displayName = (this.user.displayName || this.user.email || 'User').trim();
+            this.renderUserAvatar(userBtn, displayName, this.user.avatarUrl);
+            userBtn.title = displayName;
+            userBtn.setAttribute('aria-label', `${displayName} menu`);
 
-            document.getElementById('userDisplayName').textContent = this.user.displayName;
-            document.getElementById('userEmail').textContent = this.user.email;
+            const userDisplayName = document.getElementById('userDisplayName');
+            const userEmail = document.getElementById('userEmail');
+            if (userDisplayName) userDisplayName.textContent = displayName;
+            if (userEmail) userEmail.textContent = this.user.email || '';
 
             // Show/hide admin section
             if (adminSection) {
@@ -94,7 +94,34 @@ class AuthUI {
                 </svg>
             `;
             userBtn.title = 'Sign In';
+            userBtn.setAttribute('aria-label', 'Sign In');
         }
+    }
+
+    renderUserAvatar(userBtn, displayName, avatarUrl) {
+        if (avatarUrl && typeof avatarUrl === 'string') {
+            const avatarImage = document.createElement('img');
+            avatarImage.className = 'user-avatar-img';
+            avatarImage.src = avatarUrl;
+            avatarImage.alt = '';
+            avatarImage.referrerPolicy = 'no-referrer';
+            avatarImage.decoding = 'async';
+            avatarImage.addEventListener('error', () => {
+                this.renderUserInitial(userBtn, displayName);
+            }, { once: true });
+            userBtn.replaceChildren(avatarImage);
+            return;
+        }
+
+        this.renderUserInitial(userBtn, displayName);
+    }
+
+    renderUserInitial(userBtn, displayName) {
+        const initial = (displayName || 'U').trim().charAt(0).toUpperCase() || 'U';
+        const avatar = document.createElement('span');
+        avatar.className = 'user-avatar';
+        avatar.textContent = initial;
+        userBtn.replaceChildren(avatar);
     }
 
     createUserMenu() {

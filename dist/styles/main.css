@@ -1982,6 +1982,8 @@ body {
 
 .user-btn {
   position: relative;
+  flex-shrink: 0;
+  overflow: hidden;
 }
 
 .user-avatar {
@@ -2808,6 +2810,7 @@ body {
 .user-avatar-img {
   width: 28px;
   height: 28px;
+  display: block;
   border-radius: 50%;
   object-fit: cover;
 }
