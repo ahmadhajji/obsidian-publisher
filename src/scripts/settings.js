@@ -38,7 +38,7 @@
 
     // Settings state
     const settings = {
-        theme: localStorage.getItem('theme') || 'dark',
+        theme: localStorage.getItem('theme') || 'light',
         fontSize: typographyFontSize ?? parseIntSafe(localStorage.getItem('fontSize')) ?? 16,
         sidebarCollapsed: localStorage.getItem('sidebarCollapsed') === 'true',
         hasVisited: localStorage.getItem('hasVisited') === 'true'

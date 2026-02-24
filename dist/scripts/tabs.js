@@ -188,7 +188,7 @@ class TabsManager {
         const searchInput = document.getElementById('searchInput');
         if (searchInput) {
             searchInput.focus();
-            searchInput.placeholder = '🔍 Search for a note to open in new tab...';
+            searchInput.placeholder = 'Search for a note to open in a new tab...';
             searchInput.classList.add('new-tab-mode');
             
             // Reset after blur

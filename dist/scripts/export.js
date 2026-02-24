@@ -102,7 +102,7 @@ async function exportAsPdf(notes) {
     <head>
       <meta charset="UTF-8">
       <title>${notes.length === 1 ? notes[0].title : 'Exported Notes'}</title>
-      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+      <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@300;400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
       <style>
         * {
           box-sizing: border-box;
@@ -111,7 +111,7 @@ async function exportAsPdf(notes) {
         }
         
         body {
-          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          font-family: 'Libre Franklin', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
           line-height: 1.6;
           color: #1e1e1e;
           background: white;
@@ -126,10 +126,11 @@ async function exportAsPdf(notes) {
         
         .print-title {
           font-size: 28px;
-          font-weight: 700;
+          font-family: 'Instrument Serif', Georgia, serif;
+          font-weight: 400;
           margin-bottom: 8px;
           color: #1e1e1e;
-          border-bottom: 2px solid #7c3aed;
+          border-bottom: 2px solid #e63228;
           padding-bottom: 12px;
         }
         
@@ -158,17 +159,17 @@ async function exportAsPdf(notes) {
         .print-body li { margin-bottom: 4px; }
         
         .print-body code {
-          font-family: 'JetBrains Mono', monospace;
+          font-family: 'Space Mono', monospace;
           font-size: 12px;
           background: #f5f5f5;
           padding: 2px 6px;
-          border-radius: 3px;
+          border: 1px solid #d8d8d8;
+          color: #e63228;
         }
         
         .print-body pre {
           background: #f5f5f5;
           padding: 12px;
-          border-radius: 6px;
           overflow-x: auto;
           margin: 12px 0;
           border: 1px solid #e0e0e0;
@@ -180,11 +181,12 @@ async function exportAsPdf(notes) {
         }
         
         .print-body blockquote {
-          border-left: 4px solid #7c3aed;
+          border-left: 3px solid #e63228;
           padding: 8px 16px;
           margin: 12px 0;
-          background: #f9f9f9;
+          background: rgba(230, 50, 40, 0.08);
           color: #555;
+          font-style: italic;
         }
         
         .print-body table {
@@ -217,25 +219,25 @@ async function exportAsPdf(notes) {
         }
         
         .print-body a {
-          color: #7c3aed;
+          color: #e63228;
           text-decoration: none;
         }
         
         .print-body .tag {
           display: inline-block;
-          background: #f0e6ff;
-          color: #7c3aed;
+          background: rgba(230, 50, 40, 0.1);
+          color: #e63228;
           padding: 2px 8px;
-          border-radius: 100px;
+          border: 1px solid #e63228;
           font-size: 11px;
           font-weight: 500;
         }
         
         .print-body .callout {
           padding: 12px;
-          border-radius: 6px;
           margin: 12px 0;
-          border-left: 4px solid;
+          border: 1px solid #d8d8d8;
+          border-left: 3px solid;
         }
         
         .print-body .callout-title {
@@ -245,23 +247,23 @@ async function exportAsPdf(notes) {
           margin-bottom: 6px;
         }
         
-        .print-body .callout-note { background: #eff6ff; border-color: #3b82f6; }
-        .print-body .callout-note .callout-title { color: #3b82f6; }
+        .print-body .callout-note { background: rgba(36, 104, 176, 0.08); border-color: #2468b0; }
+        .print-body .callout-note .callout-title { color: #2468b0; }
         
-        .print-body .callout-tip { background: #ecfdf5; border-color: #10b981; }
-        .print-body .callout-tip .callout-title { color: #10b981; }
+        .print-body .callout-tip { background: rgba(26, 140, 90, 0.08); border-color: #1a8c5a; }
+        .print-body .callout-tip .callout-title { color: #1a8c5a; }
         
         .print-body .callout-warning, .print-body .callout-important { 
-          background: #fffbeb; border-color: #f59e0b; 
+          background: rgba(159, 108, 20, 0.08); border-color: #9f6c14; 
         }
         .print-body .callout-warning .callout-title,
-        .print-body .callout-important .callout-title { color: #f59e0b; }
+        .print-body .callout-important .callout-title { color: #9f6c14; }
         
         .print-body .callout-caution, .print-body .callout-danger { 
-          background: #fef2f2; border-color: #ef4444; 
+          background: rgba(187, 47, 47, 0.08); border-color: #bb2f2f; 
         }
         .print-body .callout-caution .callout-title,
-        .print-body .callout-danger .callout-title { color: #ef4444; }
+        .print-body .callout-danger .callout-title { color: #bb2f2f; }
         
         .page-break {
           page-break-after: always;
@@ -299,8 +301,7 @@ async function exportAsPdf(notes) {
         
         .print-actions button {
           padding: 10px 20px;
-          border: none;
-          border-radius: 6px;
+          border: 1px solid #222;
           font-size: 14px;
           font-weight: 500;
           cursor: pointer;
@@ -308,16 +309,18 @@ async function exportAsPdf(notes) {
         }
         
         .print-btn {
-          background: #7c3aed;
+          background: #e63228;
+          border-color: #e63228;
           color: white;
         }
         
         .print-btn:hover {
-          background: #6d28d9;
+          background: #c42820;
+          border-color: #c42820;
         }
         
         .close-btn {
-          background: #e0e0e0;
+          background: #fff;
           color: #333;
         }
         

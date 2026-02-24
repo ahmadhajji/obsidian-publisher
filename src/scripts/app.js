@@ -9,7 +9,7 @@ const state = {
     currentNote: null,
     selectMode: false,
     selectedNotes: new Set(),
-    theme: localStorage.getItem('theme') || 'dark',
+    theme: localStorage.getItem('theme') || 'light',
     user: null,
     currentViewId: null // For analytics time tracking
 };
