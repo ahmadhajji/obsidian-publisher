@@ -4,6 +4,8 @@
 
 class TypographySettings {
     constructor() {
+        this.emojiFallback = '"Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"';
+
         this.defaults = {
             fontFamily: 'Inter',
             fontSize: 16,
@@ -58,10 +60,10 @@ class TypographySettings {
 
     applySettings() {
         const root = document.documentElement;
-        const content = document.querySelector('.note-body, #noteBody');
 
         // Apply CSS custom properties
-        root.style.setProperty('--typography-font', this.getFontValue(this.settings.fontFamily));
+        const fontWithEmojiFallback = `${this.getFontValue(this.settings.fontFamily)}, ${this.emojiFallback}`;
+        root.style.setProperty('--typography-font', fontWithEmojiFallback);
         root.style.setProperty('--typography-size', `${this.settings.fontSize}px`);
         root.style.setProperty('--typography-line-height', this.settings.lineHeight);
         root.style.setProperty('--typography-content-width', `${this.settings.contentWidth}px`);
