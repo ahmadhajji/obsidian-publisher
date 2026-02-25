@@ -56,6 +56,7 @@ class AuthUI {
         this.user = user;
         this.isAdmin = isAdmin;
         window.obsidianPublisher.state.user = user;
+        window.obsidianPublisher.onAuthStateChange?.(user);
         this.updateUI();
     }
 
@@ -63,6 +64,7 @@ class AuthUI {
         this.user = null;
         this.isAdmin = false;
         window.obsidianPublisher.state.user = null;
+        window.obsidianPublisher.onAuthStateChange?.(null);
         this.updateUI();
     }
 

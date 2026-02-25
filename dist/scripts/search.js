@@ -1,133 +1,115 @@
 /**
- * Obsidian Publisher - Full-Text Search
+ * Obsidian Publisher - Search V2 (server-scored)
  */
 
-// Search state
-let searchIndex = null;
 let searchTimeout = null;
+let activeController = null;
 
-// DOM Elements
 const searchInput = document.getElementById('searchInput');
 const searchResults = document.getElementById('searchResults');
 
-// Initialize search
-async function initSearch() {
+function getActiveVault() {
+    return window.obsidianPublisher?.state?.currentVault || null;
+}
+
+function getSearchEndpoint(query) {
+    const vault = getActiveVault();
+    if (vault?.id) {
+        return `/api/vaults/${encodeURIComponent(vault.id)}/search?q=${encodeURIComponent(query)}`;
+    }
+    return `/api/search?q=${encodeURIComponent(query)}`;
+}
+
+function parseQueryTerms(query) {
+    const terms = [];
+    for (const token of query.toLowerCase().trim().split(/\s+/)) {
+        if (!token) continue;
+        if (/^[a-z]+:.+/.test(token)) continue;
+        terms.push(token);
+    }
+    return terms;
+}
+
+async function performSearch(query) {
+    if (!query.trim()) {
+        hideSearchResults();
+        return;
+    }
+
+    if (activeController) {
+        activeController.abort();
+        activeController = null;
+    }
+
+    const controller = new AbortController();
+    activeController = controller;
+
     try {
-        const response = await fetch('/api/search');
-        if (!response.ok) throw new Error('Failed to load search index');
-        searchIndex = await response.json();
-        console.log(`Search index loaded: ${searchIndex.length} notes`);
+        const response = await fetch(getSearchEndpoint(query), {
+            credentials: 'include',
+            signal: controller.signal
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to search notes');
+        }
+
+        const results = await response.json();
+        if (activeController !== controller) {
+            return;
+        }
+
+        displayResults(Array.isArray(results) ? results : [], parseQueryTerms(query));
     } catch (error) {
-        console.error('Failed to load search index:', error);
+        if (error.name === 'AbortError') return;
+        console.error('Search failed:', error);
+        displayResults([], []);
+    } finally {
+        if (activeController === controller) {
+            activeController = null;
+        }
     }
 }
 
-// Perform search
-function performSearch(query) {
-    if (!searchIndex || !query.trim()) {
-        hideSearchResults();
-        return;
-    }
-
-    const normalizedQuery = query.toLowerCase().trim();
-    const terms = normalizedQuery.split(/\s+/).filter(t => t.length > 1);
-
-    if (terms.length === 0) {
-        hideSearchResults();
-        return;
-    }
-
-    // Score each note
-    const results = searchIndex
-        .map(note => {
-            let score = 0;
-            let matchedContent = '';
-
-            const titleLower = note.title.toLowerCase();
-            const contentLower = note.content;
-
-            terms.forEach(term => {
-                // Title matches are worth more
-                if (titleLower.includes(term)) {
-                    score += 10;
-                    // Exact title match bonus
-                    if (titleLower === term) {
-                        score += 5;
-                    }
-                }
-
-                // Content matches
-                const contentMatches = (contentLower.match(new RegExp(escapeRegex(term), 'gi')) || []).length;
-                score += contentMatches * 2;
-
-                // Find snippet
-                if (!matchedContent && contentLower.includes(term)) {
-                    const index = contentLower.indexOf(term);
-                    const start = Math.max(0, index - 40);
-                    const end = Math.min(contentLower.length, index + term.length + 80);
-                    matchedContent = '...' + contentLower.slice(start, end) + '...';
-                }
-            });
-
-            return {
-                ...note,
-                score,
-                matchedContent
-            };
-        })
-        .filter(note => note.score > 0)
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 10); // Top 10 results
-
-    displayResults(results, terms);
-}
-
-// Display search results
 function displayResults(results, terms) {
     if (results.length === 0) {
-        searchResults.innerHTML = `
-      <div class="search-no-results">
-        No notes found
-      </div>
-    `;
+        searchResults.innerHTML = '<div class="search-no-results">No notes found</div>';
     } else {
         searchResults.innerHTML = results
-            .map(result => `
-        <div class="search-result-item" data-note-id="${result.id}">
-          <div class="search-result-title">${highlightTerms(result.title, terms)}</div>
-          <div class="search-result-path">${result.path}</div>
-          ${result.matchedContent ? `
-            <div class="search-result-snippet">
-              ${highlightTerms(result.matchedContent, terms)}
-            </div>
-          ` : ''}
-        </div>
-      `)
+            .map((result) => {
+                const snippet = buildSnippet(result.content, terms);
+                return `
+                    <div class="search-result-item" data-note-id="${escapeHtml(result.id)}">
+                      <div class="search-result-title">${highlightTerms(result.title, terms)}</div>
+                      <div class="search-result-path">${escapeHtml(result.path || '')}</div>
+                      ${snippet ? `<div class="search-result-snippet">${highlightTerms(snippet, terms)}</div>` : ''}
+                    </div>
+                `;
+            })
             .join('');
 
-        // Add click handlers
-        searchResults.querySelectorAll('.search-result-item').forEach(item => {
+        searchResults.querySelectorAll('.search-result-item').forEach((item) => {
             item.addEventListener('click', () => {
                 const noteId = item.dataset.noteId;
                 const { state } = window.obsidianPublisher;
-                const note = state.notes.find(n => n.id === noteId);
-                if (note) {
-                    // Use tabs manager to open the note
-                    if (window.tabsManager) {
-                        if (window._openInNewTab) {
-                            window.tabsManager.openTab(note, true);
-                            window._openInNewTab = false;
-                        } else if (window.tabsManager.getActiveTab()) {
-                            window.tabsManager.navigateInTab(note);
-                        } else {
-                            window.tabsManager.openTab(note);
-                        }
-                    } else if (window.obsidianPublisher.displayNote) {
-                        window.obsidianPublisher.displayNote(note);
+                const note = state.notes.find((n) => n.id === noteId || n.legacyId === noteId);
+                if (!note) return;
+
+                if (window.tabsManager) {
+                    if (window._openInNewTab) {
+                        window.tabsManager.openTab(note, true);
+                        window._openInNewTab = false;
+                    } else if (window.tabsManager.getActiveTab()) {
+                        window.tabsManager.navigateInTab(note);
+                    } else {
+                        window.tabsManager.openTab(note);
                     }
-                    hideSearchResults();
-                    searchInput.value = '';
+                } else if (window.obsidianPublisher.displayNote) {
+                    window.obsidianPublisher.displayNote(note);
                 }
+
+                hideSearchResults();
+                searchInput.value = '';
             });
         });
     }
@@ -135,47 +117,56 @@ function displayResults(results, terms) {
     showSearchResults();
 }
 
-// Highlight search terms in text
+function buildSnippet(content, terms) {
+    const text = String(content || '');
+    if (!text) return '';
+
+    for (const term of terms) {
+        const index = text.toLowerCase().indexOf(term.toLowerCase());
+        if (index >= 0) {
+            const start = Math.max(0, index - 40);
+            const end = Math.min(text.length, index + term.length + 80);
+            return `...${escapeHtml(text.slice(start, end))}...`;
+        }
+    }
+
+    return escapeHtml(text.slice(0, 120));
+}
+
 function highlightTerms(text, terms) {
-    let result = escapeHtml(text);
-    terms.forEach(term => {
+    let result = escapeHtml(text || '');
+    terms.forEach((term) => {
+        if (!term) return;
         const regex = new RegExp(`(${escapeRegex(term)})`, 'gi');
         result = result.replace(regex, '<mark>$1</mark>');
     });
     return result;
 }
 
-// Show search results
 function showSearchResults() {
     searchResults.classList.add('active');
 }
 
-// Hide search results
 function hideSearchResults() {
     searchResults.classList.remove('active');
 }
 
-// Escape regex special characters
 function escapeRegex(string) {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return String(string || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-// Escape HTML
 function escapeHtml(text) {
     const div = document.createElement('div');
-    div.textContent = text;
+    div.textContent = text || '';
     return div.innerHTML;
 }
 
-// Event listeners
 searchInput.addEventListener('input', (e) => {
     const query = e.target.value;
-
-    // Debounce search
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
         performSearch(query);
-    }, 150);
+    }, 180);
 });
 
 searchInput.addEventListener('focus', () => {
@@ -184,17 +175,15 @@ searchInput.addEventListener('focus', () => {
     }
 });
 
-// Close search results when clicking outside
 document.addEventListener('click', (e) => {
     if (!searchResults.contains(e.target) && e.target !== searchInput) {
         hideSearchResults();
     }
 });
 
-// Keyboard navigation
 searchInput.addEventListener('keydown', (e) => {
     const items = searchResults.querySelectorAll('.search-result-item');
-    const activeItem = searchResults.querySelector('.search-result-item:hover, .search-result-item.focused');
+    const activeItem = searchResults.querySelector('.search-result-item.focused');
 
     if (e.key === 'ArrowDown') {
         e.preventDefault();
@@ -218,14 +207,9 @@ searchInput.addEventListener('keydown', (e) => {
         }
     } else if (e.key === 'Enter') {
         const focused = searchResults.querySelector('.search-result-item.focused');
-        if (focused) {
-            focused.click();
-        }
+        if (focused) focused.click();
     } else if (e.key === 'Escape') {
         hideSearchResults();
         searchInput.blur();
     }
 });
-
-// Initialize when DOM is ready
-document.addEventListener('DOMContentLoaded', initSearch);

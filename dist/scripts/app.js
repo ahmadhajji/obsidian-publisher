@@ -6,12 +6,18 @@
 const state = {
     notes: [],
     folderTree: null,
+    vaults: [],
+    currentVault: null,
     currentNote: null,
     selectMode: false,
     selectedNotes: new Set(),
     theme: localStorage.getItem('theme') || 'light',
     user: null,
-    currentViewId: null // For analytics time tracking
+    currentViewId: null, // For analytics time tracking
+    push: {
+        supported: 'serviceWorker' in navigator && 'PushManager' in window,
+        subscribed: false
+    }
 };
 
 // DOM Elements
@@ -60,19 +66,8 @@ async function init() {
         // Apply saved theme
         document.documentElement.dataset.theme = state.theme;
 
-        // Load notes data from API
-        const response = await fetch('/api/notes');
-        if (!response.ok) throw new Error('Failed to load notes');
-
-        const data = await response.json();
-        state.notes = data.notes;
-        state.folderTree = data.folderTree;
-
-        // Update site title
-        if (data.siteName) {
-            elements.siteTitle.textContent = data.siteName;
-            document.title = data.siteName;
-        }
+        await loadVaults();
+        await loadNotesForVault(state.currentVault?.id || null);
 
         // Render file tree
         renderFileTree();
@@ -97,6 +92,60 @@ async function init() {
     // Always initialize these regardless of API success
     setupEventListeners();
     initializeV2Components();
+}
+
+async function loadVaults() {
+    try {
+        const response = await fetch('/api/vaults', { credentials: 'include' });
+        if (!response.ok) {
+            throw new Error('Failed to load vaults');
+        }
+
+        const data = await response.json();
+        state.vaults = Array.isArray(data.vaults) ? data.vaults : [];
+    } catch (error) {
+        console.error('Failed to load vaults:', error);
+        state.vaults = [];
+    }
+}
+
+function getDefaultVaultFromState() {
+    if (!Array.isArray(state.vaults) || state.vaults.length === 0) return null;
+    return state.vaults.find((vault) => vault.isDefault) || state.vaults[0];
+}
+
+async function loadNotesForVault(vaultId = null) {
+    const selectedVault = vaultId
+        ? state.vaults.find((vault) => vault.id === vaultId) || null
+        : getDefaultVaultFromState();
+
+    let endpoint = '/api/notes';
+    if (selectedVault?.id && state.user) {
+        endpoint = `/api/vaults/${encodeURIComponent(selectedVault.id)}/notes`;
+    }
+
+    const response = await fetch(endpoint, { credentials: 'include' });
+    if (!response.ok) {
+        throw new Error('Failed to load notes');
+    }
+
+    const data = await response.json();
+    state.notes = data.notes || [];
+    state.folderTree = data.folderTree || null;
+    state.currentVault = data.vault || selectedVault || null;
+    state.currentNote = null;
+
+    if (data.siteName) {
+        elements.siteTitle.textContent = data.siteName;
+        document.title = data.siteName;
+    }
+
+    if (elements.noteContent && elements.welcomeScreen) {
+        elements.noteContent.style.display = 'none';
+        elements.welcomeScreen.style.display = 'block';
+    }
+
+    renderVaultSwitcher();
 }
 
 
@@ -140,11 +189,191 @@ function initializeV2Components() {
 
     // Setup reading position tracking
     setupReadingPositionTracking();
+
+    // Push subscription controls
+    setupPushControls();
+}
+
+function renderVaultSwitcher() {
+    const headerLeft = document.querySelector('.header-left');
+    if (!headerLeft) return;
+
+    let switcher = document.getElementById('vaultSwitcher');
+    if (!switcher) {
+        switcher = document.createElement('select');
+        switcher.id = 'vaultSwitcher';
+        switcher.className = 'vault-switcher';
+        switcher.title = 'Switch vault';
+        headerLeft.appendChild(switcher);
+    }
+
+    const vaults = Array.isArray(state.vaults) ? state.vaults : [];
+    if (vaults.length <= 1) {
+        switcher.style.display = 'none';
+        return;
+    }
+
+    switcher.style.display = '';
+    switcher.innerHTML = vaults
+        .map((vault) => `
+            <option value="${escapeHtml(vault.id)}" ${state.currentVault?.id === vault.id ? 'selected' : ''}>
+                ${escapeHtml(vault.name)}
+            </option>
+        `)
+        .join('');
+
+    switcher.onchange = async (event) => {
+        const nextVaultId = event.target.value;
+        try {
+            await loadNotesForVault(nextVaultId);
+            renderFileTree();
+            handleInitialRoute();
+            if (window.commentsUI) {
+                window.commentsUI.loadComments(state.currentNote?.id || '');
+            }
+        } catch (error) {
+            console.error('Failed to switch vault:', error);
+        }
+    };
+}
+
+async function getPushConfig() {
+    try {
+        const response = await fetch('/api/auth/config', { credentials: 'include' });
+        if (!response.ok) return { pushEnabled: false, vapidPublicKey: null };
+        return await response.json();
+    } catch {
+        return { pushEnabled: false, vapidPublicKey: null };
+    }
+}
+
+async function getPushSubscription() {
+    if (!navigator.serviceWorker || !window.PushManager) return null;
+    const registration = await navigator.serviceWorker.ready;
+    return registration.pushManager.getSubscription();
+}
+
+async function subscribeToPush(vapidPublicKey) {
+    if (!vapidPublicKey) {
+        throw new Error('Missing VAPID public key');
+    }
+
+    const registration = await navigator.serviceWorker.ready;
+    const converted = urlBase64ToUint8Array(vapidPublicKey);
+    const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: converted
+    });
+
+    await fetch('/api/push/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ subscription })
+    });
+
+    state.push.subscribed = true;
+}
+
+async function unsubscribeFromPush() {
+    const subscription = await getPushSubscription();
+    if (!subscription) {
+        state.push.subscribed = false;
+        return;
+    }
+
+    await fetch('/api/push/unsubscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ endpoint: subscription.endpoint })
+    });
+
+    await subscription.unsubscribe();
+    state.push.subscribed = false;
+}
+
+function renderPushButton() {
+    const toolbar = document.querySelector('.toolbar');
+    if (!toolbar) return;
+
+    let button = document.getElementById('pushToggleBtn');
+    if (!button) {
+        button = document.createElement('button');
+        button.id = 'pushToggleBtn';
+        button.className = 'toolbar-btn';
+        button.title = 'Enable notifications';
+        button.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+        `;
+        toolbar.insertBefore(button, toolbar.querySelector('#themeToggle'));
+    }
+
+    button.style.display = state.user && state.push.supported ? '' : 'none';
+    button.classList.toggle('active', state.push.subscribed);
+    button.title = state.push.subscribed ? 'Disable notifications' : 'Enable notifications';
+}
+
+async function setupPushControls() {
+    renderPushButton();
+    const button = document.getElementById('pushToggleBtn');
+    if (!button) return;
+
+    const config = await getPushConfig();
+    if (!config.pushEnabled || !state.push.supported) {
+        button.style.display = 'none';
+        return;
+    }
+
+    state.push.subscribed = Boolean(await getPushSubscription());
+    renderPushButton();
+
+    button.onclick = async () => {
+        if (!state.user) {
+            window.authUI?.showModal();
+            return;
+        }
+
+        try {
+            if (state.push.subscribed) {
+                await unsubscribeFromPush();
+            } else {
+                const permission = await Notification.requestPermission();
+                if (permission !== 'granted') return;
+                await subscribeToPush(config.vapidPublicKey);
+            }
+            renderPushButton();
+        } catch (error) {
+            console.error('Push toggle failed:', error);
+        }
+    };
 }
 
 // Handle initial URL routing
 function handleInitialRoute() {
     const path = window.location.pathname;
+
+    const tagMatch = path.match(/^\/tags\/([^/]+)$/);
+    if (tagMatch) {
+        const tag = decodeURIComponent(tagMatch[1]);
+        showTagListing(tag).catch((error) => {
+            console.error('Failed to load tag listing:', error);
+        });
+        return;
+    }
+
+    const metaMatch = path.match(/^\/meta\/([^/]+)\/([^/]+)$/);
+    if (metaMatch) {
+        const field = decodeURIComponent(metaMatch[1]);
+        const value = decodeURIComponent(metaMatch[2]);
+        showMetaListing(field, value).catch((error) => {
+            console.error('Failed to load metadata listing:', error);
+        });
+        return;
+    }
 
     // Check for note routes (supports both /notes/:id and nested preview routes)
     const noteMatch = path.match(/^(.*)\/notes\/(.+)$/);
@@ -178,6 +407,79 @@ function handleInitialRoute() {
             }
         }
     }
+}
+
+function getActiveVaultIdForCollectionRoutes() {
+    if (state.currentVault?.id) return state.currentVault.id;
+    const fallback = getDefaultVaultFromState();
+    return fallback?.id || null;
+}
+
+async function showTagListing(tag) {
+    const vaultId = getActiveVaultIdForCollectionRoutes();
+    if (!vaultId) {
+        throw new Error('No vault available');
+    }
+
+    const response = await fetch(`/api/vaults/${encodeURIComponent(vaultId)}/tags/${encodeURIComponent(tag)}`, {
+        credentials: 'include'
+    });
+    if (!response.ok) {
+        throw new Error('Failed to load tag listing');
+    }
+
+    const data = await response.json();
+    showCollectionListing(`Tag: #${data.tag}`, data.notes || []);
+}
+
+async function showMetaListing(field, value) {
+    const vaultId = getActiveVaultIdForCollectionRoutes();
+    if (!vaultId) {
+        throw new Error('No vault available');
+    }
+
+    const response = await fetch(`/api/vaults/${encodeURIComponent(vaultId)}/meta/${encodeURIComponent(field)}/${encodeURIComponent(value)}`, {
+        credentials: 'include'
+    });
+    if (!response.ok) {
+        throw new Error('Failed to load metadata listing');
+    }
+
+    const data = await response.json();
+    showCollectionListing(`Meta: ${data.field} = ${data.value}`, data.notes || []);
+}
+
+function showCollectionListing(title, notes) {
+    state.currentNote = null;
+    elements.welcomeScreen.style.display = 'none';
+    elements.noteContent.style.display = 'block';
+    elements.noteTitle.textContent = title;
+    elements.noteMeta.innerHTML = '<div class=\"breadcrumb\"><span class=\"breadcrumb-item breadcrumb-current\">Collection</span></div>';
+    elements.noteBody.innerHTML = `
+        <div class=\"collection-listing\">
+            ${notes.length === 0 ? '<p>No notes found.</p>' : ''}
+            ${notes.map((note) => `
+                <button class=\"collection-note-item\" data-note-id=\"${escapeHtml(note.id)}\">
+                    <strong>${escapeHtml(note.title)}</strong>
+                    <span>${escapeHtml(note.path || '')}</span>
+                </button>
+            `).join('')}
+        </div>
+    `;
+
+    elements.noteBody.querySelectorAll('.collection-note-item').forEach((button) => {
+        button.addEventListener('click', () => {
+            const noteId = button.dataset.noteId;
+            const note = state.notes.find((entry) => entry.id === noteId || entry.legacyId === noteId);
+            if (!note) return;
+
+            if (window.tabsManager?.getActiveTab()) {
+                window.tabsManager.navigateInTab(note);
+            } else {
+                window.tabsManager?.openTab(note);
+            }
+        });
+    });
 }
 
 // Add share button to toolbar
@@ -580,7 +882,10 @@ function renderProperties(frontmatter) {
 // Record note view for analytics
 async function recordNoteView(noteId) {
     try {
-        const response = await fetch(`/api/notes/${noteId}`, {
+        const endpoint = state.currentVault?.id
+            ? `/api/vaults/${encodeURIComponent(state.currentVault.id)}/notes/${encodeURIComponent(noteId)}`
+            : `/api/notes/${encodeURIComponent(noteId)}`;
+        const response = await fetch(endpoint, {
             credentials: 'include'
         });
         const data = await response.json();
@@ -748,12 +1053,49 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; i += 1) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+
+async function onAuthStateChange(user) {
+    state.user = user || null;
+    try {
+        await loadVaults();
+        const currentVaultStillVisible = state.currentVault
+            ? state.vaults.some((vault) => vault.id === state.currentVault.id)
+            : false;
+
+        if (!currentVaultStillVisible) {
+            await loadNotesForVault(null);
+            renderFileTree();
+            handleInitialRoute();
+        } else {
+            renderVaultSwitcher();
+        }
+    } catch (error) {
+        console.error('Failed to refresh vault context after auth change:', error);
+    }
+
+    setupPushControls().catch((error) => {
+        console.error('Failed to refresh push controls:', error);
+    });
+}
+
 // Expose state and functions for other modules
 window.obsidianPublisher = {
     state,
     displayNote,
     hideExportModal,
-    escapeHtml
+    escapeHtml,
+    loadNotesForVault,
+    onAuthStateChange
 };
 
 // Initialize when DOM is ready

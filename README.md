@@ -5,8 +5,14 @@ A live server that automatically syncs your Obsidian notes from Google Drive and
 ## Features
 
 - 🔄 **Auto-sync** from Google Drive - no manual rebuilds
+- 🧠 **Incremental sync** with persisted registry/render cache
 - 📝 Full Obsidian syntax support
-- 🔍 Full-text search
+- 🔍 Full-text search with query filters (`tag:`, `folder:`, `vault:`, `is:`)
+- 🏷️ Tag and metadata endpoints
+- 🔐 Frontmatter publishing controls (`draft`, `private`, `unlisted`, `published_at`)
+- 🧵 Comment workflow with inline anchors, resolve/reopen, and mentions
+- 🔔 Web push notifications (published notes + mentions/replies)
+- 🗂️ Vault-aware API surface
 - 📥 Export as Markdown or PDF
 - 🌙 Dark/Light mode
 - 📱 Mobile responsive
@@ -105,6 +111,12 @@ Your site will be live at `https://your-app.onrender.com`
 
 In Render dashboard → Your service → Settings → Custom Domains
 
+## Deploy on Private Server (HomeLab)
+
+For the current self-hosted production topology (Docker Compose, systemd timer auto-deploy, Cloudflare Tunnel, and Caddy routing), see:
+
+- `docs/DEPLOYMENT-HOMELAB.md`
+
 ## How It Works
 
 1. When someone visits your site, the server fetches notes from Google Drive
@@ -122,6 +134,10 @@ In Render dashboard → Your service → Settings → Custom Domains
 | `ATTACHMENTS_FOLDER_ID` | Google Drive folder ID for your attachments/images |
 | `CORS_ORIGIN` | Comma-separated allowlist for cross-origin requests |
 | `DRIVE_FETCH_CONCURRENCY` | Parallel fetch count for Drive note loading (default: 6) |
+| `SYNC_INTERVAL_SECONDS` | Background sync interval in seconds (default: 180) |
+| `VAPID_PUBLIC_KEY` | VAPID public key for Web Push |
+| `VAPID_PRIVATE_KEY` | VAPID private key for Web Push |
+| `VAPID_SUBJECT` | VAPID subject (for example: `mailto:admin@domain.com`) |
 | `SITE_NAME` | Title shown in header |
 | `PORT` | Server port (default: 3000) |
 
@@ -130,8 +146,21 @@ In Render dashboard → Your service → Settings → Custom Domains
 | Endpoint | Description |
 |----------|-------------|
 | `GET /api/notes` | Get all notes with folder tree |
+| `GET /api/vaults` | List visible vaults |
+| `GET /api/vaults/:vaultId/notes` | Get notes for one vault |
 | `GET /api/search` | Get search index |
+| `GET /api/vaults/:vaultId/search?q=...` | Vault-scoped ranked search |
+| `GET /api/vaults/:vaultId/tags` | List visible tags |
+| `GET /api/vaults/:vaultId/tags/:tag` | List notes for one tag |
+| `GET /api/vaults/:vaultId/meta/:field/:value` | Filter notes by frontmatter field/value |
+| `POST /api/admin/sync` | Trigger immediate sync (admin only) |
 | `POST /api/refresh` | Clear cache and refresh notes (admin only) |
+| `POST /api/push/subscribe` | Register push subscription |
+| `POST /api/push/unsubscribe` | Remove push subscription |
+| `POST /api/push/test` | Send test push notification (admin only) |
+| `POST /api/comments/:commentId/resolve` | Resolve comment thread |
+| `POST /api/comments/:commentId/reopen` | Reopen comment thread |
+| `GET /api/users/mentions?q=...` | Mention lookup |
 | `GET /api/attachment/:name` | Get image/file from attachments |
 | `GET /api/health` | Health check |
 

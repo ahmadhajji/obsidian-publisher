@@ -1,5 +1,5 @@
 /**
- * Obsidian Notes Publisher - Live Server V2
+ * Obsidian Notes Publisher - Live Server V3
  */
 
 require('dotenv').config();
@@ -10,8 +10,15 @@ const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 
-// Import modules
-const { fetchNotes, clearCache, getAttachment, resolveNoteId } = require('./lib/drive');
+const {
+    fetchNotes,
+    fetchVaultNotes,
+    syncVault,
+    syncAllVaults,
+    clearCache,
+    getAttachment,
+    resolveNoteId
+} = require('./lib/drive');
 const {
     getGoogleAuthUrl,
     handleGoogleCallback,
@@ -23,6 +30,7 @@ const {
     setUserRole,
     blockUser,
     unblockUser,
+    canModerate,
     isOAuthConfigured
 } = require('./lib/oauth');
 const {
@@ -30,6 +38,9 @@ const {
     getCommentsForNote,
     updateComment,
     deleteComment,
+    resolveComment,
+    reopenComment,
+    getCommentById,
     threadComments
 } = require('./lib/comments');
 const {
@@ -40,6 +51,26 @@ const {
     getReadingHistory
 } = require('./lib/analytics');
 const { statements } = require('./lib/db');
+const {
+    resolveVaultByIdOrSlug,
+    getDefaultVault,
+    listVaultsForUser,
+    getVaultRoleForUser,
+    authorizeVaultRole
+} = require('./lib/vaults');
+const {
+    canAccessNote,
+    isNoteListable
+} = require('./lib/publish');
+const {
+    isPushConfigured,
+    getPublicVapidKey,
+    upsertPushSubscription,
+    removePushSubscription,
+    notifyPublishedNotes,
+    notifyCommentActivity,
+    sendPayloadToAll
+} = require('./lib/push');
 
 const SESSION_COOKIE_MAX_AGE = 365 * 24 * 60 * 60 * 1000;
 const JSON_BODY_LIMIT = '250kb';
@@ -51,6 +82,14 @@ function isProduction() {
 
 function isDesignPreviewEnabled() {
     return !isProduction() && process.env.DESIGN_PREVIEW === '1';
+}
+
+function featureFlag(name, fallback = true) {
+    const value = process.env[name];
+    if (value === undefined) return fallback;
+    if (value === '1' || value === 'true') return true;
+    if (value === '0' || value === 'false') return false;
+    return fallback;
 }
 
 function normalizeDesignConcept(value) {
@@ -131,8 +170,6 @@ function applySecurityHeaders(req, res, next) {
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
     res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
-
-    // Keep inline script/style support for existing static templates.
     res.setHeader(
         'Content-Security-Policy',
         [
@@ -188,11 +225,67 @@ function parseBoolean(value, fallback = false) {
     return fallback;
 }
 
-async function resolveNoteContext(noteId) {
-    const data = await fetchNotes();
-    const canonicalId = resolveNoteId(noteId);
+function buildFolderTreeFromNotes(notes) {
+    const tree = { name: 'root', children: [], notes: [] };
+    const folders = new Map();
+    folders.set('', tree);
+
+    const ensureFolder = (folderPath) => {
+        if (!folderPath) return tree;
+
+        const parts = folderPath.split('/');
+        let current = '';
+        let parent = '';
+
+        for (const part of parts) {
+            current = current ? `${current}/${part}` : part;
+            if (!folders.has(current)) {
+                const node = { name: part, path: current, children: [], notes: [] };
+                folders.set(current, node);
+                const parentNode = folders.get(parent || '');
+                parentNode.children.push(node);
+            }
+            parent = current;
+        }
+
+        return folders.get(current);
+    };
+
+    for (const note of notes) {
+        const node = ensureFolder(note.folder || '');
+        node.notes.push({ id: note.id, title: note.title });
+    }
+
+    return tree;
+}
+
+function getVaultRole(reqUser, vault) {
+    if (!vault) return null;
+    if (reqUser?.role === 'admin') return 'owner';
+    return getVaultRoleForUser(reqUser, vault.id);
+}
+
+function filterNotesByVisibility(notes, reqUser, vault, { listedOnly = false } = {}) {
+    const vaultRole = getVaultRole(reqUser, vault);
+
+    return notes.filter((note) => {
+        const publishState = note.publishState || null;
+        if (!canAccessNote(publishState, reqUser, vaultRole)) {
+            return false;
+        }
+
+        if (listedOnly) {
+            return isNoteListable(publishState, reqUser, vaultRole);
+        }
+
+        return true;
+    });
+}
+
+function getCanonicalNoteId(data, noteId, vault) {
+    const canonicalId = resolveNoteId(noteId, vault?.id || null);
     const note = data.notes.find((n) => n.id === canonicalId || n.legacyId === noteId);
-    return { data, note, canonicalId };
+    return { canonicalId, note };
 }
 
 function mergeComments(primary, secondary) {
@@ -208,12 +301,198 @@ function mergeComments(primary, secondary) {
     return merged;
 }
 
+function parseSearchQuery(rawQuery) {
+    const query = String(rawQuery || '').trim();
+    if (!query) return { terms: [], filters: {} };
+
+    const filters = {};
+    const terms = [];
+
+    for (const token of query.split(/\s+/)) {
+        const match = token.match(/^([a-zA-Z]+):(.+)$/);
+        if (!match) {
+            terms.push(token.toLowerCase());
+            continue;
+        }
+
+        const key = match[1].toLowerCase();
+        const value = match[2].toLowerCase();
+
+        if (['tag', 'folder', 'vault', 'author', 'is'].includes(key)) {
+            if (!filters[key]) filters[key] = [];
+            filters[key].push(value);
+        } else {
+            terms.push(token.toLowerCase());
+        }
+    }
+
+    return { terms, filters };
+}
+
+function levenshteinDistance(a, b) {
+    if (a === b) return 0;
+    if (!a.length) return b.length;
+    if (!b.length) return a.length;
+
+    const matrix = Array.from({ length: b.length + 1 }, () => []);
+
+    for (let i = 0; i <= b.length; i += 1) matrix[i][0] = i;
+    for (let j = 0; j <= a.length; j += 1) matrix[0][j] = j;
+
+    for (let i = 1; i <= b.length; i += 1) {
+        for (let j = 1; j <= a.length; j += 1) {
+            const cost = a[j - 1] === b[i - 1] ? 0 : 1;
+            matrix[i][j] = Math.min(
+                matrix[i - 1][j] + 1,
+                matrix[i][j - 1] + 1,
+                matrix[i - 1][j - 1] + cost
+            );
+        }
+    }
+
+    return matrix[b.length][a.length];
+}
+
+function fuzzyMatches(text, term) {
+    const cleanText = String(text || '').toLowerCase();
+    const cleanTerm = String(term || '').toLowerCase();
+
+    if (!cleanTerm || cleanTerm.length < 4) return false;
+
+    const words = cleanText.split(/\W+/).filter(Boolean);
+    let threshold = 0;
+    if (cleanTerm.length >= 4 && cleanTerm.length <= 6) threshold = 1;
+    if (cleanTerm.length >= 7) threshold = 2;
+    if (threshold === 0) return false;
+
+    return words.some((word) => {
+        if (Math.abs(word.length - cleanTerm.length) > threshold) return false;
+        return levenshteinDistance(word, cleanTerm) <= threshold;
+    });
+}
+
+function scoreSearchEntry(entry, terms) {
+    const title = String(entry.title || '').toLowerCase();
+    const path = String(entry.path || '').toLowerCase();
+    const tags = Array.isArray(entry.tags) ? entry.tags : [];
+    const content = String(entry.content || '').toLowerCase();
+
+    let score = 0;
+
+    for (const term of terms) {
+        const clean = term.toLowerCase();
+        if (!clean) continue;
+
+        if (title === clean) {
+            score += 40;
+            continue;
+        }
+
+        if (title.startsWith(clean)) {
+            score += 25;
+        }
+
+        if (title.includes(clean)) {
+            score += 18;
+        }
+
+        if (tags.some((tag) => String(tag).toLowerCase().includes(clean))) {
+            score += 15;
+        }
+
+        const frontmatterText = JSON.stringify(entry.frontmatter || {}).toLowerCase();
+        if (frontmatterText.includes(clean)) {
+            score += 10;
+        }
+
+        if (path.includes(clean)) {
+            score += 8;
+        }
+
+        const contentMatches = (content.match(new RegExp(clean.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length;
+        if (contentMatches > 0) {
+            score += Math.min(20, contentMatches * 2);
+        } else if (fuzzyMatches(`${title} ${tags.join(' ')} ${content}`, clean)) {
+            score += 4;
+        }
+    }
+
+    return score;
+}
+
+function applySearchFilters(entries, filters, vault) {
+    let filtered = entries;
+
+    if (filters.tag?.length) {
+        filtered = filtered.filter((entry) => {
+            const tags = Array.isArray(entry.tags) ? entry.tags.map((tag) => String(tag).toLowerCase()) : [];
+            return filters.tag.every((wanted) => tags.includes(wanted));
+        });
+    }
+
+    if (filters.folder?.length) {
+        filtered = filtered.filter((entry) => {
+            const folder = String(entry.folder || '').toLowerCase();
+            return filters.folder.every((value) => folder.includes(value));
+        });
+    }
+
+    if (filters.vault?.length) {
+        filtered = filtered.filter((entry) => {
+            const vaultSlug = String(entry.vaultSlug || vault.slug || '').toLowerCase();
+            const vaultId = String(entry.vaultId || vault.id || '').toLowerCase();
+            return filters.vault.some((value) => value === vaultSlug || value === vaultId);
+        });
+    }
+
+    if (filters.is?.length) {
+        filtered = filtered.filter((entry) => {
+            return filters.is.every((value) => {
+                if (value === 'draft') return !!entry.isDraft;
+                if (value === 'unlisted') return !!entry.isUnlisted;
+                return true;
+            });
+        });
+    }
+
+    return filtered;
+}
+
+function runSearch(entries, query, vault) {
+    if (!query || !query.trim()) {
+        return entries.slice(0, 200);
+    }
+
+    const parsed = parseSearchQuery(query);
+    const filtered = applySearchFilters(entries, parsed.filters, vault);
+
+    const scored = filtered
+        .map((entry) => ({
+            ...entry,
+            score: scoreSearchEntry(entry, parsed.terms.length ? parsed.terms : [query.toLowerCase()])
+        }))
+        .filter((entry) => entry.score > 0 || parsed.terms.length === 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 50);
+
+    return scored;
+}
+
+async function getVaultDataOr404(vaultRef) {
+    const vault = resolveVaultByIdOrSlug(vaultRef) || getDefaultVault();
+    if (!vault) {
+        return { vault: null, data: null };
+    }
+
+    const data = await fetchVaultNotes(vault.id);
+    return { vault, data };
+}
+
 function createApp() {
     const app = express();
 
     app.set('trust proxy', 1);
 
-    // Middleware
     app.use(createCorsMiddleware());
     app.use(createInMemoryRateLimiter({
         windowMs: toInt(process.env.RATE_LIMIT_WINDOW_MS, 15 * 60 * 1000),
@@ -234,22 +513,21 @@ function createApp() {
         app.use('/redesigns', express.static(redesignsDir));
     }
 
-    // Serve static files from dist folder
     app.use(express.static(path.join(__dirname, 'dist')));
 
     // ===========================================
-    // AUTH ROUTES (OAuth)
+    // AUTH ROUTES
     // ===========================================
 
-    // Check OAuth configuration status
     app.get('/api/auth/config', (req, res) => {
         res.json({
             googleEnabled: isOAuthConfigured(),
-            appleEnabled: false
+            appleEnabled: false,
+            pushEnabled: isPushConfigured(),
+            vapidPublicKey: getPublicVapidKey()
         });
     });
 
-    // Start Google OAuth flow
     app.get('/auth/google', (req, res) => {
         try {
             if (!isOAuthConfigured()) {
@@ -263,7 +541,6 @@ function createApp() {
         }
     });
 
-    // Google OAuth callback
     app.get('/auth/google/callback', async (req, res) => {
         try {
             const { code, error } = req.query;
@@ -279,7 +556,6 @@ function createApp() {
 
             const result = await handleGoogleCallback(code);
 
-            // Set session cookie
             res.cookie('session_token', result.session.token, {
                 httpOnly: true,
                 secure: isProduction(),
@@ -294,17 +570,13 @@ function createApp() {
         }
     });
 
-    // Logout
     app.post('/api/auth/logout', (req, res) => {
         const token = req.cookies?.session_token;
-        if (token) {
-            logoutUser(token);
-        }
+        if (token) logoutUser(token);
         res.clearCookie('session_token');
         res.json({ success: true });
     });
 
-    // Get current user
     app.get('/api/auth/me', (req, res) => {
         if (req.user) {
             res.json({
@@ -313,6 +585,145 @@ function createApp() {
             });
         } else {
             res.json({ user: null });
+        }
+    });
+
+    // ===========================================
+    // VAULT ROUTES
+    // ===========================================
+
+    app.get('/api/vaults', (req, res) => {
+        try {
+            const vaults = listVaultsForUser(req.user).map((vault) => ({
+                id: vault.id,
+                slug: vault.slug,
+                name: vault.name,
+                isDefault: vault.is_default === 1,
+                role: vault.user_role || (req.user?.role === 'admin' ? 'owner' : null)
+            }));
+
+            res.json({ vaults });
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to fetch vaults' });
+        }
+    });
+
+    app.get('/api/vaults/:vaultId/notes', authorizeVaultRole('viewer'), async (req, res) => {
+        try {
+            const data = await fetchVaultNotes(req.vault.id);
+            const visibleNotes = filterNotesByVisibility(data.notes, req.user, req.vault, { listedOnly: true });
+
+            res.json({
+                siteName: data.siteName,
+                vault: {
+                    id: req.vault.id,
+                    slug: req.vault.slug,
+                    name: req.vault.name
+                },
+                notes: visibleNotes,
+                folderTree: buildFolderTreeFromNotes(visibleNotes)
+            });
+        } catch (error) {
+            console.error('Error fetching vault notes:', error);
+            res.status(500).json({ error: 'Failed to fetch notes' });
+        }
+    });
+
+    app.get('/api/vaults/:vaultId/notes/:noteId', authorizeVaultRole('viewer'), async (req, res) => {
+        try {
+            const data = await fetchVaultNotes(req.vault.id);
+            const { note, canonicalId } = getCanonicalNoteId(data, req.params.noteId, req.vault);
+
+            if (!note) {
+                return res.status(404).json({ error: 'Note not found' });
+            }
+
+            const vaultRole = getVaultRole(req.user, req.vault);
+            if (!canAccessNote(note.publishState, req.user, vaultRole)) {
+                return res.status(404).json({ error: 'Note not found' });
+            }
+
+            const viewId = recordPageView(canonicalId, req.user?.id || null, req.sessionId || null);
+            return res.json({ note, viewId, canonicalId });
+        } catch (error) {
+            console.error('Error fetching vault note:', error);
+            return res.status(500).json({ error: 'Failed to fetch note' });
+        }
+    });
+
+    app.get('/api/vaults/:vaultId/search', authorizeVaultRole('viewer'), async (req, res) => {
+        try {
+            const data = await fetchVaultNotes(req.vault.id);
+            const visibleNoteIds = new Set(
+                filterNotesByVisibility(data.notes, req.user, req.vault, { listedOnly: true }).map((note) => note.id)
+            );
+
+            const visibleEntries = data.searchIndex.filter((entry) => visibleNoteIds.has(entry.id));
+            const query = asTrimmedString(req.query?.q) || '';
+            const results = runSearch(visibleEntries, query, req.vault);
+
+            res.json(results);
+        } catch (error) {
+            console.error('Error searching vault:', error);
+            res.status(500).json({ error: 'Failed to search notes' });
+        }
+    });
+
+    app.get('/api/vaults/:vaultId/tags', authorizeVaultRole('viewer'), async (req, res) => {
+        try {
+            const data = await fetchVaultNotes(req.vault.id);
+            const visibleNotes = filterNotesByVisibility(data.notes, req.user, req.vault, { listedOnly: true });
+
+            const counts = new Map();
+            for (const note of visibleNotes) {
+                for (const tag of note.tags || []) {
+                    const normalized = String(tag).toLowerCase();
+                    counts.set(normalized, (counts.get(normalized) || 0) + 1);
+                }
+            }
+
+            const tags = Array.from(counts.entries())
+                .map(([tag, count]) => ({ tag, count }))
+                .sort((a, b) => a.tag.localeCompare(b.tag));
+
+            res.json({ tags });
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to fetch tags' });
+        }
+    });
+
+    app.get('/api/vaults/:vaultId/tags/:tag', authorizeVaultRole('viewer'), async (req, res) => {
+        try {
+            const wanted = String(req.params.tag || '').toLowerCase();
+            const data = await fetchVaultNotes(req.vault.id);
+            const visibleNotes = filterNotesByVisibility(data.notes, req.user, req.vault, { listedOnly: true })
+                .filter((note) => (note.tags || []).map((t) => String(t).toLowerCase()).includes(wanted));
+
+            res.json({ tag: wanted, notes: visibleNotes });
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to fetch tag notes' });
+        }
+    });
+
+    app.get('/api/vaults/:vaultId/meta/:field/:value', authorizeVaultRole('viewer'), async (req, res) => {
+        try {
+            const field = String(req.params.field || '').trim();
+            const value = String(req.params.value || '').trim().toLowerCase();
+
+            const data = await fetchVaultNotes(req.vault.id);
+            const visibleNotes = filterNotesByVisibility(data.notes, req.user, req.vault, { listedOnly: true })
+                .filter((note) => {
+                    const raw = note.frontmatter?.[field];
+                    if (Array.isArray(raw)) {
+                        return raw.some((item) => String(item).toLowerCase() === value);
+                    }
+                    if (raw === null || raw === undefined) return false;
+                    return String(raw).toLowerCase() === value;
+                });
+
+            res.json({ field, value, notes: visibleNotes });
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to fetch metadata view' });
         }
     });
 
@@ -346,7 +757,6 @@ function createApp() {
             setUserRole(userId, role);
             return res.json({ success: true });
         } catch (error) {
-            console.error('Error updating user role:', error);
             return res.status(400).json({ error: error.message });
         }
     });
@@ -362,18 +772,15 @@ function createApp() {
             blockUser(userId);
             return res.json({ success: true });
         } catch (error) {
-            console.error('Error blocking user:', error);
             return res.status(400).json({ error: error.message });
         }
     });
 
     app.post('/api/admin/users/:userId/unblock', requireAdmin, (req, res) => {
         try {
-            const { userId } = req.params;
-            unblockUser(userId);
+            unblockUser(req.params.userId);
             return res.json({ success: true });
         } catch (error) {
-            console.error('Error unblocking user:', error);
             return res.status(400).json({ error: error.message });
         }
     });
@@ -383,7 +790,6 @@ function createApp() {
             const feedback = statements.getAllFeedback.all();
             res.json({ feedback });
         } catch (error) {
-            console.error('Error fetching feedback:', error);
             res.status(500).json({ error: 'Failed to fetch feedback' });
         }
     });
@@ -393,52 +799,133 @@ function createApp() {
             statements.markFeedbackRead.run(req.params.feedbackId);
             res.json({ success: true });
         } catch (error) {
-            console.error('Error marking feedback:', error);
             res.status(500).json({ error: 'Failed to update feedback' });
         }
     });
 
+    app.post('/api/admin/sync', requireAdmin, async (req, res) => {
+        try {
+            const vaultRef = asTrimmedString(req.body?.vaultId) || asTrimmedString(req.query?.vaultId) || null;
+            const force = parseBoolean(req.body?.force, false);
+
+            if (vaultRef) {
+                const vault = resolveVaultByIdOrSlug(vaultRef);
+                if (!vault) {
+                    return res.status(404).json({ error: 'Vault not found' });
+                }
+
+                const result = await syncVault(vault.id, { force });
+                await notifyPublishedNotes(vault, result.newlyPublished || []);
+                return res.json({
+                    success: true,
+                    mode: 'single',
+                    vault: { id: vault.id, slug: vault.slug, name: vault.name },
+                    stats: result.syncStats,
+                    newlyPublished: (result.newlyPublished || []).length
+                });
+            }
+
+            const all = await syncAllVaults({ force });
+            let publishedCount = 0;
+
+            for (const item of all) {
+                // eslint-disable-next-line no-await-in-loop
+                await notifyPublishedNotes(item.vault, item.result.newlyPublished || []);
+                publishedCount += (item.result.newlyPublished || []).length;
+            }
+
+            return res.json({
+                success: true,
+                mode: 'all',
+                results: all.map((item) => ({
+                    vault: { id: item.vault.id, slug: item.vault.slug, name: item.vault.name },
+                    stats: item.result.syncStats,
+                    newlyPublished: (item.result.newlyPublished || []).length
+                })),
+                publishedCount
+            });
+        } catch (error) {
+            console.error('Admin sync failed:', error);
+            return res.status(500).json({ error: 'Failed to run sync', message: error.message });
+        }
+    });
+
     // ===========================================
-    // NOTES ROUTES
+    // DEFAULT-VAULT ALIAS ROUTES
     // ===========================================
 
     app.get('/api/notes', async (req, res) => {
         try {
+            const defaultVault = getDefaultVault();
+            if (!defaultVault) {
+                return res.status(503).json({ error: 'Default vault is not configured' });
+            }
+
             const data = await fetchNotes();
+            const visibleNotes = filterNotesByVisibility(data.notes, req.user, defaultVault, { listedOnly: true });
+
             res.json({
                 siteName: data.siteName,
-                notes: data.notes,
-                folderTree: data.folderTree
+                notes: visibleNotes,
+                folderTree: buildFolderTreeFromNotes(visibleNotes),
+                vault: {
+                    id: defaultVault.id,
+                    slug: defaultVault.slug,
+                    name: defaultVault.name
+                }
             });
         } catch (error) {
-            console.error('Error fetching notes:', error);
             res.status(500).json({ error: 'Failed to fetch notes', message: error.message });
         }
     });
 
     app.get('/api/notes/:noteId', async (req, res) => {
         try {
-            const { note, canonicalId } = await resolveNoteContext(req.params.noteId);
+            const defaultVault = getDefaultVault();
+            if (!defaultVault) {
+                return res.status(503).json({ error: 'Default vault is not configured' });
+            }
+
+            const data = await fetchNotes();
+            const { note, canonicalId } = getCanonicalNoteId(data, req.params.noteId, defaultVault);
 
             if (!note) {
                 return res.status(404).json({ error: 'Note not found' });
             }
 
-            const viewId = recordPageView(canonicalId, req.user?.id || null, req.sessionId || null);
+            const vaultRole = getVaultRole(req.user, defaultVault);
+            if (!canAccessNote(note.publishState, req.user, vaultRole)) {
+                return res.status(404).json({ error: 'Note not found' });
+            }
 
+            const viewId = recordPageView(canonicalId, req.user?.id || null, req.sessionId || null);
             return res.json({ note, viewId, canonicalId });
         } catch (error) {
-            console.error('Error fetching note:', error);
             return res.status(500).json({ error: 'Failed to fetch note' });
         }
     });
 
     app.get('/api/search', async (req, res) => {
         try {
+            const defaultVault = getDefaultVault();
+            if (!defaultVault) {
+                return res.status(503).json({ error: 'Default vault is not configured' });
+            }
+
             const data = await fetchNotes();
-            res.json(data.searchIndex);
+            const visibleNoteIds = new Set(
+                filterNotesByVisibility(data.notes, req.user, defaultVault, { listedOnly: true }).map((note) => note.id)
+            );
+
+            const visibleEntries = data.searchIndex.filter((entry) => visibleNoteIds.has(entry.id));
+            const query = asTrimmedString(req.query?.q) || '';
+
+            if (!query) {
+                return res.json(visibleEntries);
+            }
+
+            return res.json(runSearch(visibleEntries, query, defaultVault));
         } catch (error) {
-            console.error('Error fetching search index:', error);
             res.status(500).json({ error: 'Failed to fetch search index' });
         }
     });
@@ -451,12 +938,12 @@ function createApp() {
     app.get('/api/attachment/:filename', async (req, res) => {
         try {
             const { filename } = req.params;
-            const { data, mimeType } = await getAttachment(decodeURIComponent(filename));
+            const vaultRef = asTrimmedString(req.query?.vaultId) || null;
+            const { data, mimeType } = await getAttachment(decodeURIComponent(filename), vaultRef);
             res.set('Content-Type', mimeType);
             res.set('Cache-Control', 'public, max-age=86400');
             res.send(data);
         } catch (error) {
-            console.error('Error fetching attachment:', error);
             res.status(404).json({ error: 'Attachment not found' });
         }
     });
@@ -465,30 +952,51 @@ function createApp() {
     // COMMENTS ROUTES
     // ===========================================
 
-    app.get('/api/notes/:noteId/comments', async (req, res) => {
+    async function resolveNoteForComments(vaultRef, noteId) {
+        const { vault, data } = await getVaultDataOr404(vaultRef);
+        if (!vault || !data) return { vault: null, note: null, canonicalId: null, data: null };
+
+        const { note, canonicalId } = getCanonicalNoteId(data, noteId, vault);
+        return { vault, note, canonicalId, data };
+    }
+
+    const handleGetComments = async (req, res, vaultRef) => {
         try {
-            const { note, canonicalId } = await resolveNoteContext(req.params.noteId);
-            if (!note) {
+            const { vault, note, canonicalId } = await resolveNoteForComments(vaultRef, req.params.noteId);
+            if (!vault || !note) {
                 return res.status(404).json({ error: 'Note not found' });
             }
 
-            const primary = getCommentsForNote(canonicalId, req.user?.id);
+            const vaultRole = getVaultRole(req.user, vault);
+            if (!canAccessNote(note.publishState, req.user, vaultRole)) {
+                return res.status(404).json({ error: 'Note not found' });
+            }
+
+            const currentUser = req.user
+                ? { id: req.user.id, role: req.user.role, canModerate: canModerate(req.user) }
+                : null;
+
+            const primary = getCommentsForNote(canonicalId, currentUser);
             const withLegacy = note.legacyId && note.legacyId !== canonicalId
-                ? getCommentsForNote(note.legacyId, req.user?.id)
+                ? getCommentsForNote(note.legacyId, currentUser)
                 : [];
 
             const threaded = threadComments(mergeComments(primary, withLegacy));
             return res.json({ comments: threaded, canonicalId });
         } catch (error) {
-            console.error('Error fetching comments:', error);
             return res.status(500).json({ error: 'Failed to fetch comments' });
         }
-    });
+    };
 
-    app.post('/api/notes/:noteId/comments', requireAuth, async (req, res) => {
+    const handleCreateComment = async (req, res, vaultRef) => {
         try {
-            const { note, canonicalId } = await resolveNoteContext(req.params.noteId);
-            if (!note) {
+            const { vault, note, canonicalId } = await resolveNoteForComments(vaultRef, req.params.noteId);
+            if (!vault || !note) {
+                return res.status(404).json({ error: 'Note not found' });
+            }
+
+            const vaultRole = getVaultRole(req.user, vault);
+            if (!canAccessNote(note.publishState, req.user, vaultRole)) {
                 return res.status(404).json({ error: 'Note not found' });
             }
 
@@ -505,14 +1013,45 @@ function createApp() {
                 req.user.id,
                 content,
                 isPublic,
-                parentId || null
+                parentId || null,
+                {
+                    selectionStart: req.body?.selectionStart,
+                    selectionEnd: req.body?.selectionEnd,
+                    selectionText: req.body?.selectionText
+                }
             );
+
+            let replyUserId = null;
+            if (parentId) {
+                const parent = getCommentById(parentId);
+                replyUserId = parent?.user_id || null;
+            }
+
+            const actorDisplayName = req.user.displayName || req.user.email || 'Someone';
+            await notifyCommentActivity({
+                actorUserId: req.user.id,
+                actorDisplayName,
+                noteId: canonicalId,
+                noteTitle: note.title,
+                commentPreview: content.slice(0, 120),
+                mentionUserIds: comment.mentionUserIds || [],
+                replyUserId
+            });
 
             return res.status(201).json({ comment });
         } catch (error) {
-            console.error('Error creating comment:', error);
             return res.status(400).json({ error: error.message });
         }
+    };
+
+    app.get('/api/notes/:noteId/comments', (req, res) => handleGetComments(req, res, null));
+    app.get('/api/vaults/:vaultId/notes/:noteId/comments', authorizeVaultRole('viewer'), (req, res) => {
+        return handleGetComments(req, res, req.vault.id);
+    });
+
+    app.post('/api/notes/:noteId/comments', requireAuth, (req, res) => handleCreateComment(req, res, null));
+    app.post('/api/vaults/:vaultId/notes/:noteId/comments', requireAuth, authorizeVaultRole('viewer'), (req, res) => {
+        return handleCreateComment(req, res, req.vault.id);
     });
 
     app.put('/api/comments/:commentId', requireAuth, (req, res) => {
@@ -527,7 +1066,6 @@ function createApp() {
             updateComment(req.params.commentId, req.user.id, content, isPublic);
             return res.json({ success: true });
         } catch (error) {
-            console.error('Error updating comment:', error);
             return res.status(400).json({ error: error.message });
         }
     });
@@ -537,8 +1075,99 @@ function createApp() {
             deleteComment(req.params.commentId, req.user.id);
             return res.json({ success: true });
         } catch (error) {
-            console.error('Error deleting comment:', error);
             return res.status(400).json({ error: error.message });
+        }
+    });
+
+    app.post('/api/comments/:commentId/resolve', requireAuth, (req, res) => {
+        try {
+            resolveComment(req.params.commentId, {
+                id: req.user.id,
+                role: req.user.role,
+                canModerate: canModerate(req.user)
+            });
+            return res.json({ success: true });
+        } catch (error) {
+            return res.status(400).json({ error: error.message });
+        }
+    });
+
+    app.post('/api/comments/:commentId/reopen', requireAuth, (req, res) => {
+        try {
+            reopenComment(req.params.commentId, {
+                id: req.user.id,
+                role: req.user.role,
+                canModerate: canModerate(req.user)
+            });
+            return res.json({ success: true });
+        } catch (error) {
+            return res.status(400).json({ error: error.message });
+        }
+    });
+
+    app.get('/api/users/mentions', requireAuth, (req, res) => {
+        try {
+            const q = asTrimmedString(req.query?.q) || '';
+            if (q.length < 2) {
+                return res.json({ users: [] });
+            }
+
+            const pattern = `%${q.toLowerCase()}%`;
+            const users = statements.searchUsersForMentions
+                .all(pattern, pattern, pattern, q.toLowerCase(), q.toLowerCase(), 10)
+                .map((user) => ({
+                    id: user.id,
+                    displayName: user.display_name || user.email.split('@')[0],
+                    email: user.email
+                }));
+
+            return res.json({ users });
+        } catch (error) {
+            return res.status(500).json({ error: 'Failed to lookup users' });
+        }
+    });
+
+    // ===========================================
+    // PUSH ROUTES
+    // ===========================================
+
+    app.post('/api/push/subscribe', requireAuth, (req, res) => {
+        try {
+            if (!isPushConfigured()) {
+                return res.status(503).json({ error: 'Push notifications are not configured' });
+            }
+
+            upsertPushSubscription(req.user.id, req.body?.subscription);
+            return res.json({ success: true });
+        } catch (error) {
+            return res.status(400).json({ error: error.message });
+        }
+    });
+
+    app.post('/api/push/unsubscribe', requireAuth, (req, res) => {
+        try {
+            removePushSubscription(asTrimmedString(req.body?.endpoint));
+            return res.json({ success: true });
+        } catch (error) {
+            return res.status(400).json({ error: error.message });
+        }
+    });
+
+    app.post('/api/push/test', requireAdmin, async (req, res) => {
+        try {
+            if (!isPushConfigured()) {
+                return res.status(503).json({ error: 'Push notifications are not configured' });
+            }
+
+            const result = await sendPayloadToAll({
+                title: 'Clinical Vault test notification',
+                body: `Triggered by ${req.user.displayName || req.user.email}`,
+                url: '/'
+            }, 'published');
+
+            return res.json({ success: true, result });
+        } catch (error) {
+            return res.status(500).json({ error: 'Failed to send test push' });
         }
     });
 
@@ -575,15 +1204,25 @@ function createApp() {
             const stats = getDashboardStats();
             res.json(stats);
         } catch (error) {
-            console.error('Error fetching analytics:', error);
             res.status(500).json({ error: 'Failed to fetch analytics' });
         }
     });
 
     app.post('/api/reading/position', requireAuth, async (req, res) => {
         try {
-            const { note, canonicalId } = await resolveNoteContext(req.body?.noteId);
+            const noteId = asTrimmedString(req.body?.noteId);
             const scrollPosition = Number(req.body?.scrollPosition);
+            if (!noteId) {
+                return res.status(400).json({ error: 'noteId is required' });
+            }
+
+            const defaultVault = getDefaultVault();
+            if (!defaultVault) {
+                return res.status(503).json({ error: 'Default vault is not configured' });
+            }
+
+            const data = await fetchNotes();
+            const { note, canonicalId } = getCanonicalNoteId(data, noteId, defaultVault);
 
             if (!note) {
                 return res.status(404).json({ error: 'Note not found' });
@@ -649,8 +1288,19 @@ function createApp() {
 
     app.get('/api/share/:noteId', async (req, res) => {
         try {
-            const { note, canonicalId } = await resolveNoteContext(req.params.noteId);
+            const defaultVault = getDefaultVault();
+            if (!defaultVault) {
+                return res.status(503).json({ error: 'Default vault is not configured' });
+            }
+
+            const data = await fetchNotes();
+            const { note, canonicalId } = getCanonicalNoteId(data, req.params.noteId, defaultVault);
             if (!note) {
+                return res.status(404).json({ error: 'Note not found' });
+            }
+
+            const vaultRole = getVaultRole(req.user, defaultVault);
+            if (!canAccessNote(note.publishState, req.user, vaultRole)) {
                 return res.status(404).json({ error: 'Note not found' });
             }
 
@@ -708,7 +1358,6 @@ function createApp() {
 
             return res.status(201).json({ success: true, message: 'Feedback submitted successfully' });
         } catch (error) {
-            console.error('Error submitting feedback:', error);
             return res.status(500).json({ error: 'Failed to submit feedback' });
         }
     });
@@ -721,9 +1370,6 @@ function createApp() {
         res.json({ status: 'ok', timestamp: new Date().toISOString() });
     });
 
-    // ===========================================
-    // LOCAL DESIGN PREVIEW ROUTES
-    // ===========================================
     if (isDesignPreviewEnabled()) {
         const redesignsDir = path.join(__dirname, 'redesigns');
         const selectorFile = path.join(redesignsDir, 'index.html');
@@ -763,7 +1409,6 @@ function createApp() {
         res.sendFile(path.join(__dirname, 'dist', 'index.html'));
     });
 
-    // CORS errors and fallback error handler
     app.use((err, req, res, next) => {
         if (err && err.message === 'CORS origin denied') {
             return res.status(403).json({ error: 'Origin not allowed' });
@@ -776,6 +1421,44 @@ function createApp() {
     return app;
 }
 
+let syncIntervalHandle = null;
+let syncInFlight = false;
+
+async function runBackgroundSyncCycle() {
+    if (syncInFlight) {
+        return;
+    }
+
+    syncInFlight = true;
+    const started = Date.now();
+
+    try {
+        const results = await syncAllVaults();
+        let publishedCount = 0;
+
+        for (const item of results) {
+            // eslint-disable-next-line no-await-in-loop
+            await notifyPublishedNotes(item.vault, item.result.newlyPublished || []);
+            publishedCount += (item.result.newlyPublished || []).length;
+        }
+
+        console.log(JSON.stringify({
+            event: 'sync-cycle',
+            vaults: results.length,
+            publishedCount,
+            durationMs: Date.now() - started
+        }));
+    } catch (error) {
+        console.error(JSON.stringify({
+            event: 'sync-cycle-error',
+            error: error.message,
+            durationMs: Date.now() - started
+        }));
+    } finally {
+        syncInFlight = false;
+    }
+}
+
 function startServer() {
     const app = createApp();
     const PORT = process.env.PORT || 3000;
@@ -783,6 +1466,29 @@ function startServer() {
 
     const server = app.listen(PORT, HOST, () => {
         console.log(`Obsidian Notes Publisher listening on http://${HOST}:${PORT}`);
+    });
+
+    if (featureFlag('FEATURE_INCREMENTAL_SYNC', true)) {
+        const intervalMs = Math.max(30, toInt(process.env.SYNC_INTERVAL_SECONDS, 180)) * 1000;
+        syncIntervalHandle = setInterval(() => {
+            runBackgroundSyncCycle().catch((error) => {
+                console.error('Background sync cycle failed:', error.message);
+            });
+        }, intervalMs);
+        syncIntervalHandle.unref();
+
+        setTimeout(() => {
+            runBackgroundSyncCycle().catch((error) => {
+                console.error('Initial background sync failed:', error.message);
+            });
+        }, 1_500).unref();
+    }
+
+    server.on('close', () => {
+        if (syncIntervalHandle) {
+            clearInterval(syncIntervalHandle);
+            syncIntervalHandle = null;
+        }
     });
 
     return server;
@@ -797,5 +1503,6 @@ module.exports = {
     startServer,
     ensureAnonymousSession,
     applySecurityHeaders,
-    createInMemoryRateLimiter
+    createInMemoryRateLimiter,
+    runBackgroundSyncCycle
 };
